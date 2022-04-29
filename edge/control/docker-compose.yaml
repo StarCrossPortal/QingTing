@@ -1,0 +1,30 @@
+version: "3.2"
+services:
+  mysqlserver:
+    image: mysql:5.7
+    environment:
+      - MYSQL_DATABASE=edge
+      - MYSQL_ROOT_PASSWORD=123
+      - TZ=Asia/Shanghai
+  control:
+    image: daxia/qingting:control_latest
+    #    build:
+    #      context: ./
+    #      dockerfile: ./Dockerfile
+    container_name: control
+    environment:
+      - baseInfo=eyJzZXJ2ZXJBZGRyIjoiaHR0cDovL3R4eThnLnNvbmdib3kuc2l0ZToxMDAwMCIsInRva2VuIjoiMWNhNDcyNWMzNDc1ODE4M2FmM2ZkMWY3MjNmMDdhMzEiLCJzY2VJZCI6Niwibm9kZUlkIjo0LCJ0YXNrX2lkIjoxM30=
+      - $serverAddr=http://txy8g.songboy.site:10000
+      - $token=1ca4725c34758183af3fd1f723f07a31
+      - $sceId=6
+      - $nodeId=4
+      - $taskId=13
+    links:
+      - mysqlserver:mysql_addr
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/control/code"
+        target: "/root/code"
+    stdin_open: true
+    tty: true
+#    command: /bin/sh -c "cd /root/code && php safe.php"

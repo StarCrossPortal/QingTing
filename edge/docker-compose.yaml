@@ -1,0 +1,135 @@
+version: "3.2"
+services:
+  mysqlserver:
+    restart: always
+    ports:
+      - "33306:3306"
+    image: daxia/qingting:mysql57
+    environment:
+      - MYSQL_DATABASE=edge
+      - MYSQL_ROOT_PASSWORD=123
+      - TZ=Asia/Shanghai
+  control:
+    restart: always
+    container_name: main
+    image: daxia/qingting:control_latest
+    environment:
+      - serverAddr=http://txy8g.songboy.site:10000
+      - token=4b2d6574e1ad0d5e8647f23295137b77
+      - sceId=6
+      - nodeId=8
+      - taskId=9
+      - concurrent=4
+    links:
+      - mysqlserver:mysql_addr
+    stdin_open: true
+    tty: true
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/control/code"
+        target: "/root/code"
+  rad:
+    image: daxia/qingting:rad_latest
+    restart: always
+    links:
+      - mysqlserver:mysql_addr
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/rad/code"
+        target: "/root/code"
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/rad/tools"
+        target: "/data/tools"
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+  xray:
+    image: daxia/qingting:xray_latest
+    restart: always
+    links:
+      - mysqlserver:mysql_addr
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/xray/code"
+        target: "/root/code"
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/xray/tools"
+        target: "/data/tools"
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+  sqlmap:
+    image: daxia/qingting:sqlmap_latest
+    restart: always
+    links:
+      - mysqlserver:mysql_addr
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/sqlmap/code"
+        target: "/root/code"
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/sqlmap/tools"
+        target: "/data/tools"
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+  dirmap:
+    image: daxia/qingting:dirmap_latest
+    restart: always
+    links:
+      - mysqlserver:mysql_addr
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/dirmap/code"
+        target: "/root/code"
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/dirmap/tools"
+        target: "/data/tools"
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+  dismap:
+    image: daxia/qingting:dismap_latest
+    restart: always
+    links:
+      - mysqlserver:mysql_addr
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/dismap/code"
+        target: "/root/code"
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/dismap/tools"
+        target: "/data/tools"
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+  oneforall:
+    image: daxia/qingting:oneforall_latest
+    restart: always
+    links:
+      - mysqlserver:mysql_addr
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/oneforall/code"
+        target: "/root/code"
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/oneforall/tools/config"
+        target: "/OneForAll/config"
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+  vulmap:
+    image: daxia/qingting:vulmap_latest
+    restart: always
+    links:
+      - mysqlserver:mysql_addr
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/vulmap/code"
+        target: "/root/code"
+      - type: bind
+        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/vulmap/tools"
+        target: "/data/tools"
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"

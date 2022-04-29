@@ -1,0 +1,31 @@
+version: "3.2"
+services:
+  mysqlserver:
+    image: mysql:5.7
+    environment:
+      - MYSQL_DATABASE=edge
+      - MYSQL_ROOT_PASSWORD=123
+      - TZ=Asia/Shanghai
+  control:
+    image: daxia/qingting:control_latest
+    container_name: control
+    environment:
+      - baseInfo=eyJzZXJ2ZXJBZGRyIjoiaHR0cDpcL1wvdHh5OGcuc29uZ2JveS5zaXRlOjEwMDAwIiwidG9rZW4iOiIxY2E0NzI1YzM0NzU4MTgzYWYzZmQxZjcyM2YwN2EzMSIsInNjZUlkIjo2LCJub2RlSWQiOjR9
+    links:
+      - mysqlserver:mysql_addr
+    stdin_open: true
+    tty: true
+  rad:
+    image: daxia/qingting:rad_latest
+    links:
+      - mysqlserver:mysql_addr
+#    volumes:
+#      - type: bind
+#        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/rad/code"
+#        target: "/root/code"
+#      - type: bind
+#        source: "/Users/tangqingsong/mycode/SecurityPlatform/edge/rad/tools"
+#        target: "/data/tools"
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"

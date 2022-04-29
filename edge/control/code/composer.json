@@ -1,0 +1,6 @@
+{
+    "require": {
+        "rmccue/requests": "^2.0",
+        "topthink/think-orm": "^2.0"
+    }
+}

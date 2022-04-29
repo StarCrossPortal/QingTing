@@ -1,0 +1,16 @@
+/vendor/
+.idea
+.DS_Store
+/edge/code/vendor/
+/*/*/*/vendor/
+/*/*/vendor/
+/*/vendor/
+edge/test/frp/
+/edge/rad/tools/rad/rad_linux_amd64
+/edge/xray/tools/xray/xray_linux_amd64
+/*/*/*/*.zip
+edge/*/tools/
+edge/debug/frp/
+/code/data/
+/code/.env_local
+/code/.env
