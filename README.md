@@ -4,6 +4,9 @@
 
 蜻蜓工作台的最大特点就是集成的工具多、种类全，你可以将你想要的工具编排成任意一个场景，快速打造属于自己的安全工作台~
 
+视频教程：https://www.bilibili.com/video/BV1uR4y1P7vp/
+官网地址：http://qingting.starcross.cn/
+
 
 ## 二、部分功能截图
 ![](http://oss.songboy.site/blog/WX20220429-105707@2x.png)
