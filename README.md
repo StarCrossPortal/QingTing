@@ -7,8 +7,13 @@
 - 视频教程：https://www.bilibili.com/video/BV1uR4y1P7vp/
 - 官网地址：http://qingting.starcross.cn/
 
+## 二、联系我们
 
-## 二、部分功能截图
+![联系蜻蜓](https://user-images.githubusercontent.com/8509054/166103818-6937e3b1-dfd7-4f76-932c-78e07c9a163e.png)
+
+
+
+## 三、部分功能截图
 ![](http://oss.songboy.site/blog/WX20220429-105707@2x.png)
 
 ![](http://oss.songboy.site/blog/WX20220429-105628@2x.png)
