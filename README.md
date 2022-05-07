@@ -6,6 +6,7 @@
 
 - 视频教程：https://www.bilibili.com/video/BV1uR4y1P7vp/
 - 官网地址：http://qingting.starcross.cn/
+- 文档地址：https://wiki.qingting.starcross.cn/
 
 ## 二、联系我们
 
