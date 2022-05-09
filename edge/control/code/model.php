@@ -9,30 +9,31 @@ use think\facade\Db;
 function heartbeat($serverAddr, $nodeId, $token, $taskId)
 {
 //    $ipInfo = json_decode( file_get_contents("http://ipinfo.io/"), true);
+    $version = file_get_contents("/data/code/version.txt");
+    $version = empty($version) ? 'v0.0.0' : $version;
 
     while (true) {
-        $url = "{$serverAddr}/user_api/heartbeat.html?node_id={$nodeId}&token={$token}&task_id={$taskId}";
+        $url = "{$serverAddr}/user_api/heartbeat.html?node_id={$nodeId}&token={$token}&task_id={$taskId}&version={$version}";
         $result = getServerData($url);
         $msg = $result ? '成功' : "失败  URL: $url";
         addlog("心跳连接到服务器 {$msg}");
-        sleep(5);
+        sleep(30);
     }
 }
 
-function uploadData($serverAddr, $sceId, $token)
+function uploadData($serverAddr, $usceId, $token)
 {
     addlog("开始将节点数据上传到服务器");
-    $tables = getServerData("{$serverAddr}/user_api/get_upload_table_name.html?id={$sceId}");
 
-    $url = "{$serverAddr}/user_api/upload_data_batch.html";
     $header = ['Content-Type' => 'application/json;charset=UTF-8'];
+    $url = "{$serverAddr}/user_api/upload_data_batch.html";
     while (true) {
+        $tables = getServerData("{$serverAddr}/user_api/get_upload_table_name.html?usce_id={$usceId}");
         foreach ($tables as $tableName) {
-
             $lastId = Db::table('upload_log')->where(['ability_name' => $tableName])->value('upload_last_id');
             //如果还没有记录,先插入一条记录
             if ($lastId === null) {
-                Db::table('upload_log')->insert(['ability_name' => $tableName, 'upload_last_id' => 0]);
+                Db::table('upload_log')->strict(false)->insert(['ability_name' => $tableName, 'upload_last_id' => 0]);
                 $lastId = 0;
             }
             $result = Db::table($tableName)->where('id', '>', $lastId)->limit(50)->select()->toArray();
@@ -92,13 +93,15 @@ function controlStatus(int $concurrent)
 function getServerData(string $url)
 {
     $data = file_get_contents($url);
+    addlog("向URL {$url} 请求数据: {$data}");
     $data = json_decode($data, true);
-    return $data['data'] ?? [];
+    $data = $data['data'] ?? [];
+    return $data;
 }
 
 
 //插入初始化数据
-function initData($serverAddr, $sceId, $token)
+function initData($serverAddr, $usceId, $token)
 {
     if (file_exists("/tmp/init_lock.txt")) {
         addlog("初始化操作已经执行过一次了,重复执行会导致数据丢失!!!");
@@ -106,10 +109,10 @@ function initData($serverAddr, $sceId, $token)
     }
     //创建表结构
     createControl();
-    createTables($serverAddr, $sceId);
+    createTables($serverAddr, $usceId);
 
     //获取场景所拥有的的功能
-    addAbilityControl($serverAddr, $sceId);
+    addAbilityControl($serverAddr, $usceId);
 
     //同步扫描记录
     syncScanTarget($serverAddr, $token);
@@ -133,12 +136,12 @@ function syncScanTarget($serverAddr, $token)
 
 }
 
-function createTables($serverAddr, $sceId)
+function createTables($serverAddr, $usceId)
 {
     $lock = true;
     while ($lock) {
         //获取插件建表语句
-        $tables = getServerData("{$serverAddr}/user_api/get_ability_create_sql.html?id={$sceId}");
+        $tables = getServerData("{$serverAddr}/user_api/get_ability_create_sql.html?usce_id={$usceId}");
         if (empty($tables)) {
             addlog("初始化请求建表语句失败,休息后继续执行");
             sleep(5);
@@ -154,13 +157,13 @@ function createTables($serverAddr, $sceId)
     }
 }
 
-function addAbilityControl($serverAddr, $sceId)
+function addAbilityControl($serverAddr, $usceId)
 {
     //插入功能控制数据
     addlog("插入初始化数据");
     $lock = true;
     while ($lock) {
-        $url = "{$serverAddr}/user_api/get_ability.html?id={$sceId}";
+        $url = "{$serverAddr}/user_api/get_ability.html?usce_id={$usceId}";
         $data = getServerData($url);
 
         if (empty($data)) {
@@ -176,19 +179,19 @@ function addAbilityControl($serverAddr, $sceId)
 
             // 往数据库插入表数据状态
             $data = ['ability_name' => $val, 'status' => '0'];
-            Db::table('control')->extra("IGNORE")->insert($data);
+            Db::table('control')->strict(false)->extra("IGNORE")->insert($data);
         }
         $lock = false;
     }
 
 }
 
-function insertTarget($serverAddr, $token)
+function insertTarget($serverAddr, $token, $usceId)
 {
     $lastId = 0;
     while (true) {
         //获取当前用户有哪些目标
-        $url = "{$serverAddr}/user_api/get_target.html?token={$token}&lastId={$lastId}";
+        $url = "{$serverAddr}/user_api/get_target.html?token={$token}&usce_id={$usceId}&lastId={$lastId}";
         $list = getServerData($url);
         $list = is_array($list) ? $list : [];
         foreach ($list as $val) {
@@ -197,11 +200,48 @@ function insertTarget($serverAddr, $token)
             if (empty($info)) {
                 //插入目标
                 addlog("添加新目标 {$val['name']}  {$val['url']}");
-                $result = Db::table('target')->extra("IGNORE")->insertGetId($val);
+                $result = Db::table('target')->strict(false)->extra("IGNORE")->insertGetId($val);
                 $lastId = empty($result) ? $lastId : $val['id'];
             }
         }
         sleep(5);
+    }
+
+}
+
+function downAction($serverAddr, $token, $taskId)
+{
+    while (true) {
+        //获取当前用户有哪些目标
+        $lastId = Db::table('down_action')->order('id', 'desc')->value('id');
+        $url = "{$serverAddr}/user_api/down_action.html?token={$token}&usceId={$taskId}&lastId={$lastId}";
+        $list = getServerData($url);
+        $list = is_array($list) ? $list : [];
+        foreach ($list as $val) {
+            $val['status'] = 1;
+            $result = Db::table('down_action')->strict(false)->extra("IGNORE")->insert($val);
+            if (empty($result)) {
+                continue;
+            }
+
+            try {
+                if ($val['action'] == 'delete') {
+                    Db::table($val['table'])->where(json_decode($val['where'], true))->delete();
+                } else if ($val['action'] == 'insert') {
+                    Db::table($val['table'])->strict(false)->insert(json_decode($val['data'], true));
+                } else if ($val['action'] == 'update') {
+                    Db::table($val['table'])->where(json_decode($val['where'], true))->strict(false)->update(json_decode($val['data'], true));
+                }
+            } catch (\Exception $e) {  //如书写为（Exception $e）将无效
+                addlog(["执行指令遇到错误", $val, $e->getMessage()]);
+                continue;
+            }
+
+            //上报执行事件完成状态
+            $url = "{$serverAddr}/user_api/down_action_ok.html?token={$token}&usceId={$taskId}&lastId={$val['id']}";
+            getServerData($url);
+        }
+        sleep(60);
     }
 
 }

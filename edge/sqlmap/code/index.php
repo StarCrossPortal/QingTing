@@ -28,9 +28,9 @@ function main()
         addlog("sqlmap 开始工作");
 
         //读取目标数据
-        $lastId = Db::table('scan_log')->where(['tool_name' => 'sqlmap', 'target_name' => 'urls'])->value('data_id');
-        $targetArr = Db::table('urls')->where('id', '>', intval($lastId))->select()->toArray();
-
+        $targetArr = Db::table('urls')->where('id', 'NOT IN', function ($query) {
+            $query->table('scan_log')->where(['tool_name' => 'sqlmap', 'target_name' => 'urls'])->field('data_id');
+        })->limit(20)->select()->toArray();
 
         foreach ($targetArr as $k => $v) {
             //执行检测脚本
@@ -38,12 +38,13 @@ function main()
 
             //录入检测结果
             writeData($toolPath, $v);
+
+            //更新最后扫描的ID
+            updateScanLog('sqlmap', 'urls', $v['id'] ?? 0, $v['tid'] ?? 0);
         }
-        //更新最后扫描的ID
-        updateScanLog('sqlmap', 'urls', $v['id'] ?? 0);
 
         // 修改插件的执行状态
-        Db::table('control')->where(['ability_name' => 'sqlmap'])->update(['status' => 0,'end_time' => date('Y-m-d H:i:s')]);
+        Db::table('control')->where(['ability_name' => 'sqlmap'])->update(['status' => 0, 'end_time' => date('Y-m-d H:i:s')]);
 
         addlog("sqlmap 执行完毕");
         sleep(20);

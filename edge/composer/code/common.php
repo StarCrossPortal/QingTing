@@ -24,14 +24,6 @@ function addlog($content, $out = false)
     $content = is_array($content) ? var_export($content, true) : $content;
     echo $datetime . '---' . $content . PHP_EOL;
 
-    $exist = Db::query('show tables like "log"');
-
-    if ($exist) {
-        $data = ['content' => $content];
-        Db::table('log')->extra("IGNORE")->insert($data);
-    }
-
-
 }
 
 function execLog($shell, &$output)
@@ -45,7 +37,7 @@ function execLog($shell, &$output)
     addlog(["命令执行结果", $shell, $output]);
 }
 
-function getSavePath($url, $tool = "xray", $id = 0)
+function getSavePath($url, $tool = "composer", $id = 0)
 {
     $urlInfo = parse_url($url);
 
@@ -69,4 +61,29 @@ function getSavePath($url, $tool = "xray", $id = 0)
 
 
     return $pathArr;
+}
+
+function updateScanLog($toolName, $targetName, $lastId)
+{
+    //修改工具状态
+    $data = ['tool_name' => $toolName, 'target_name' => $targetName, 'data_id' => $lastId];
+    Db::table('scan_log')->replace()->save($data);
+}
+
+//执行系统命令,并记录日志
+function systemLog($shell, $showRet = true)
+{
+    $shell .= " 2>&1";
+    //转换成字符串
+    $remark = "即将执行命令:{$shell}";
+    addlog($remark);
+    //记录日志
+    exec($shell,$output);
+    if ($output && $showRet) {
+        echo implode("\n", $output) . PHP_EOL;
+//        echo $output.PHP_EOL;
+    }
+
+
+    return $output;
 }

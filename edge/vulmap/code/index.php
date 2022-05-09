@@ -18,20 +18,19 @@ main();
 function main()
 {
     $toolPath = '/data/tools/vulmap/';
-    $filename = '/tmp/vulmap.json';
 // 循环读取状态值,直到执行完成
     while (true) {
         $result = Db::table('control')->where(['ability_name' => 'vulmap', 'status' => 1])->find();
-//        if (empty($result)) {
-//            sleep(15);
-//            continue;
-//        }
+        if (empty($result)) {
+            sleep(3);
+            continue;
+        }
         addlog("vulmap 开始工作");
 
         //读取目标数据
-        $lastId = Db::table('scan_log')->where(['tool_name' => 'vulmap', 'target_name' => 'target'])->value('data_id');
-        $targetArr = Db::table('target')->where('id', '>', intval($lastId))->select()->toArray();
-
+        $targetArr = Db::table('target')->where('id', 'NOT IN', function ($query) {
+            $query->table('scan_log')->where(['tool_name' => 'vulmap', 'target_name' => 'target'])->field('data_id');
+        })->limit(20)->select()->toArray();
 
         foreach ($targetArr as $k => $v) {
             //执行检测脚本
@@ -89,7 +88,7 @@ function writeData($toolPath, $v)
             addlog(["vulmap数据写入失败:" . json_encode($data)]);
         };
 
-        Db::name('vulmap')->insert($data);
+        Db::name('vulmap')->extra("IGNORE")->insert($data);
 
         //插入到漏洞表中
         $data['tool_name'] = 'vulmap';

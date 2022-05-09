@@ -29,10 +29,9 @@ function main()
         addlog("dismap 开始工作");
 
         //读取目标数据
-        $lastId = Db::table('scan_log')->where(['tool_name' => 'dismap', 'target_name' => 'target'])->value('data_id');
-        $targetArr = Db::table('target')->where('id', '>', intval($lastId))->select()->toArray();
-
-
+        $targetArr = Db::table('target')->where('id', 'NOT IN', function ($query) {
+            $query->table('scan_log')->where(['tool_name' => 'dismap', 'target_name' => 'target'])->field('data_id');
+        })->limit(20)->select()->toArray();
         foreach ($targetArr as $k => $v) {
             //执行检测脚本
             execTool($v, $toolPath);
@@ -85,7 +84,7 @@ function writeData($toolPath, $v)
         $data = ['tid' => $v['id'], 'user_id' => $v['user_id']];
         $data = array_merge($data, $arr);
 
-        $id = Db::name('dismap')->strict(false)->insertGetId($data);
+        $id = Db::name('dismap')->strict(false)->extra('IGNORE')->insertGetId($data);
 
         //插入到漏洞表中
         $newData['name'] = 'dismap';

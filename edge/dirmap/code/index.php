@@ -28,9 +28,9 @@ function main()
         addlog("dirmap 开始工作");
 
         //读取目标数据
-        $lastId = Db::table('scan_log')->where(['tool_name' => 'dirmap', 'target_name' => 'target'])->value('data_id');
-        $targetArr = Db::table('target')->where('id', '>', intval($lastId))->select()->toArray();
-
+        $targetArr = Db::table('target')->where('id', 'NOT IN', function ($query) {
+            $query->table('scan_log')->where(['tool_name' => 'dirmap', 'target_name' => 'target'])->field('data_id');
+        })->limit(20)->select()->toArray();
 
         foreach ($targetArr as $k => $v) {
             //执行检测脚本
@@ -40,7 +40,7 @@ function main()
             writeData($toolPath, $v);
 
             //更新最后扫描的ID
-            updateScanLog('dirmap', 'target', $v['id'] ?? 0);
+            updateScanLog('dirmap', 'target', $v['user_id'] ?? 0);
         }
 
 
@@ -87,7 +87,7 @@ function writeData($file_path, $v)
             'user_id' => $v['user_id'],
         ];
 
-        Db::name('dirmap')->insert($data);
+        Db::name('dirmap')->extra('IGNORE')->insert($data);
 
         //插入到漏洞表中
 //        Db::table('urls')->strict(false)->extra('IGNORE')->insert($data);

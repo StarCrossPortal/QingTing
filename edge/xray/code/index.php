@@ -26,9 +26,9 @@ function main()
         addlog("XRAY 开始工作");
 
         //读取目标数据
-        $lastId = Db::table('scan_log')->where(['tool_name' => 'xray', 'target_name' => 'target'])->value('data_id');
-        $targetArr = Db::table('target')->where('id', '>', intval($lastId))->select()->toArray();
-
+        $targetArr = Db::table('target')->where('id', 'NOT IN', function ($query) {
+            $query->table('scan_log')->where(['tool_name' => 'xray', 'target_name' => 'target'])->field('data_id');
+        })->limit(20)->select()->toArray();
         foreach ($targetArr as $value) {
             //定义变量
             list($url, $id, $user_id, $tid) = [$value['url'], $value['id'], $value['user_id'], $value['id'],];

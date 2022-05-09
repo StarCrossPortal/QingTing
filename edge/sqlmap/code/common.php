@@ -63,10 +63,10 @@ function getSavePath($url, $tool = "sqlmap", $id = 0)
     return $pathArr;
 }
 
-function updateScanLog($toolName, $targetName, $lastId)
+function updateScanLog($toolName, $targetName, $lastId, $tid = 0)
 {
     //修改工具状态
-    $data = ['tool_name' => $toolName, 'target_name' => $targetName, 'data_id' => $lastId];
+    $data = ['tool_name' => $toolName, 'target_name' => $targetName, 'data_id' => $lastId, 'tid' => $tid];
     Db::table('scan_log')->replace()->save($data);
 }
 

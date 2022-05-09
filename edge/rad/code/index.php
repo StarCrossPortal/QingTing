@@ -26,8 +26,9 @@ function main()
         }
         addlog("RAD 开始工作");
         //读取目标数据
-        $lastId = Db::table('scan_log')->where(['tool_name' => 'rad', 'target_name' => 'target'])->value('data_id');
-        $targetArr = Db::table('target')->where('id', '>', intval($lastId))->select()->toArray();
+        $targetArr = Db::table('target')->where('id', 'NOT IN', function ($query) {
+            $query->table('scan_log')->where(['tool_name' => 'rad', 'target_name' => 'target'])->field('data_id');
+        })->limit(20)->select()->toArray();
 
         foreach ($targetArr as $value) {
             //定义初始化变量
@@ -44,10 +45,10 @@ function main()
         updateScanLog('rad', 'target', $value['id'] ?? 0);
 
         // 修改插件的执行状态
-        Db::table('control')->where(['ability_name' => 'rad'])->update(['status' => 0,'end_time' => date('Y-m-d H:i:s')]);
+        Db::table('control')->where(['ability_name' => 'rad'])->update(['status' => 0, 'end_time' => date('Y-m-d H:i:s')]);
 
         addlog("RAD执行完毕");
-        sleep(20);
+        sleep(10);
     }
 }
 

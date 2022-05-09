@@ -5,6 +5,7 @@ exec('cd /root/code  &&  php index.php init  >> /tmp/safe.txt & ');
 // 定义grep关键词,和需要执行的命令
 $keyList = [
     'index.php syncTarget' => 'cd /root/code  &&  php index.php syncTarget  >> /tmp/syncTarget.txt & ',
+    'index.php down_action' => 'cd /root/code  &&  php index.php down_action  >> /tmp/down_action.txt & ',
     'index.php controlStatus' => 'cd /root/code  &&  php index.php controlStatus  >> /tmp/controlStatus.txt & ',
     'index.php uploadData' => 'cd /root/code  &&  php index.php uploadData  >> /tmp/uploadData.txt & ',
     'index.php heartbeat' => 'cd /root/code  &&  php index.php heartbeat  >> /tmp/heartbeat.txt & ',
