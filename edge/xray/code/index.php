@@ -4,20 +4,28 @@ include "./common.php";
 
 use think\facade\Db;
 
-$config = require('./config.php');
-if (!file_exists("/tmp/init_lock.txt")) {
-    sleep(20);
-    file_put_contents("/tmp/init_lock.txt", 1);
-}
-Db::setConfig($config);
-
-
+//初始化操作
+init();
+//主程序
 main();
+
+function init()
+{
+    $config = require('./config.php');
+    //首次运行延时20秒,等待MySQL初始化完成,再执行主程序
+    if (!file_exists("/tmp/init_lock.txt")) {
+        sleep(20);
+        file_put_contents("/tmp/init_lock.txt", 1);
+    }
+    //数据库配置信息,无需改动
+    Db::setConfig($config);
+}
 
 function main()
 {
 // 循环读取状态值,直到执行完成
     while (true) {
+        //程序是否执行存放与状态控制表中,如果可以执行才执行,否则休眠。
         $result = Db::table('control')->where(['ability_name' => 'xray', 'status' => 1])->find();
         if (empty($result)) {
             sleep(15);
@@ -25,17 +33,19 @@ function main()
         }
         addlog("XRAY 开始工作");
 
-        //读取目标数据
+        //读取目标数据,排除已经扫描过的目标
         $targetArr = Db::table('target')->where('id', 'NOT IN', function ($query) {
             $query->table('scan_log')->where(['tool_name' => 'xray', 'target_name' => 'target'])->field('data_id');
         })->limit(20)->select()->toArray();
+        //
         foreach ($targetArr as $value) {
             //定义变量
             list($url, $id, $user_id, $tid) = [$value['url'], $value['id'], $value['user_id'], $value['id'],];
+            //
             $pathArr = getSavePath($url, "xray", $id);
 
             //执行xray
-            execXray($id, $url, $tid, $pathArr);
+            execTool($id, $url, $tid, $pathArr);
             //将数据写入到数据库
             writeData($pathArr, $url, $value, $user_id);
         }
@@ -51,7 +61,28 @@ function main()
 
 }
 
+//将工具执行
+function execTool($id, $url, $tid, $pathArr)
+{
+    $result = [];
+    addlog(["XRAY开始执行扫描任务", $id, $url]);
+    $path = "cd /data/tools/xray/ && ";
 
+    // 通过系统命令执行工具
+    $cmd = "{$path} ./xray_linux_amd64 webscan --url \"{$url}\"  --json-output  {$pathArr['tool_result']}";
+    execLog($cmd, $result);
+
+
+    $result = implode("\n", $result);
+    addlog(["xray漏洞扫描结束", $tid, $url, $cmd, base64_encode($result)]);
+    $result = file_put_contents($pathArr['cmd_result'], $result);
+    if ($result == false) {
+        addlog(["xray写入执行结果失败", base64_encode($pathArr['cmd_result'])]);
+    }
+}
+
+
+//写入数据到数据库
 function writeData($pathArr, $url, $value, $user_id)
 {
     //读取结果
@@ -87,32 +118,3 @@ function writeData($pathArr, $url, $value, $user_id)
     }
 }
 
-function execXray($id, $url, $tid, $pathArr)
-{
-
-    //初始化清理目录
-//        file_exists($pathArr['tool_result']) && @unlink($pathArr['tool_result']);
-
-    addlog(["XRAY开始执行扫描任务", $id, $url]);
-    $path = "cd /data/tools/xray/ && ";
-
-    //初始化清理目录
-//    file_exists($pathArr['tool_result']) && unlink($pathArr['tool_result']);
-//    file_exists($pathArr['cmd_result']) && unlink($pathArr['cmd_result']);
-//    if (file_exists($pathArr['tool_result'])) {
-//        addlog("{$pathArr['tool_result']} 结果文件已存在");
-//        return true;
-//    }
-
-    // 设置代理
-    $cmd = "{$path} ./xray_linux_amd64 webscan --url \"{$url}\"  --json-output  {$pathArr['tool_result']}";
-    $result = [];
-    execLog($cmd, $result);
-    $result = implode("\n", $result);
-    addlog(["xray漏洞扫描结束", $tid, $url, $cmd, base64_encode($result)]);
-    $result = file_put_contents($pathArr['cmd_result'], $result);
-    if ($result == false) {
-        addlog(["xray写入执行结果失败", base64_encode($pathArr['cmd_result'])]);
-    }
-
-}
