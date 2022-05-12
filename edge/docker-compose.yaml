@@ -14,10 +14,11 @@ services:
     container_name: main
     image: daxia/qingting:control_latest
     environment:
-      - serverAddr=http://txy8g.songboy.site:10000
+      - serverAddr=http://qingting.starcross.cn
       - token=4b2d6574e1ad0d5e8647f23295137b66
-      - nodeId=605
-      - taskId=177
+      - sceId=163
+      - nodeId=612
+      - taskId=163
       - concurrent=4
     links:
       - mysqlserver:mysql_addr
@@ -63,24 +64,24 @@ services:
 #    stdin_open: true
 #    tty: true
 #    command: /bin/sh -c "cd  /root/code/  && php index.php"
-  composer:
-    image: daxia/qingting:composer_latest
-    restart: always
-    links:
-      - mysqlserver:mysql_addr
-    volumes:
-      - type: bind
-        source: "/Users/tangqingsong/mycode/QingTing/edge/composer/code"
-        target: "/root/code"
-      - type: bind
-        source: "/Users/tangqingsong/mycode/QingTing/edge/composer/tools"
-        target: "/data/tools"
-      - type: bind
-        source: "/Users/tangqingsong/mycode/check"
-        target: "/data/code"
-    stdin_open: true
-    tty: true
-    command: /bin/sh -c "cd  /root/code/  && php index.php"
+#  composer:
+#    image: daxia/qingting:composer_latest
+#    restart: always
+#    links:
+#      - mysqlserver:mysql_addr
+#    volumes:
+#      - type: bind
+#        source: "/Users/tangqingsong/mycode/QingTing/edge/composer/code"
+#        target: "/root/code"
+#      - type: bind
+#        source: "/Users/tangqingsong/mycode/QingTing/edge/composer/tools"
+#        target: "/data/tools"
+#      - type: bind
+#        source: "/Users/tangqingsong/mycode/check"
+#        target: "/data/code"
+#    stdin_open: true
+#    tty: true
+#    command: /bin/sh -c "cd  /root/code/  && php index.php"
 #  semgrep:
 #    image: daxia/qingting:semgrep_latest
 #    restart: always
@@ -204,3 +205,48 @@ services:
 #    stdin_open: true
 #    tty: true
 #    command: /bin/sh -c "cd  /root/code/  && php index.php"
+  knock:
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:knock_latest
+    restart: always
+    links:
+      - mysqlserver:mysql_addr
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/QingTing/edge/knock/code"
+        target: "/root/code"
+      - type: bind
+        source: "/Users/tangqingsong/mycode/QingTing/edge/knock/tools"
+        target: "/data/tools"
+  nmap:
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:nmap_latest
+    restart: always
+    links:
+      - mysqlserver:mysql_addr
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/QingTing/edge/nmap/code"
+        target: "/root/code"
+      - type: bind
+        source: "/Users/tangqingsong/mycode/QingTing/edge/nmap/tools"
+        target: "/data/tools"
+  masscan:
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:masscan_latest
+    restart: always
+    links:
+      - mysqlserver:mysql_addr
+    stdin_open: true
+    tty: true
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+    volumes:
+      - type: bind
+        source: "/Users/tangqingsong/mycode/QingTing/edge/masscan/code"
+        target: "/root/code"
+      - type: bind
+        source: "/Users/tangqingsong/mycode/QingTing/edge/masscan/tools"
+        target: "/data/tools"
