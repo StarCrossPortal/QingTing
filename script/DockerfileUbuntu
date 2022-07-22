@@ -1,0 +1,13 @@
+FROM ubuntu:20.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt update -y && apt install -y python   python3-pip   php  php-pdo
+RUN apt install -y php-mysql
+RUN apt install -y git php-xml php-mbstring
+
+WORKDIR /root/code
+
+CMD ["php","/root/code/index.php"]
+
+
+#docker build -t daxia/qingting:base_ubuntu_php_python .

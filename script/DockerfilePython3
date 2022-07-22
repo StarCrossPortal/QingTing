@@ -1,0 +1,6 @@
+FROM php:cli-alpine3.15
+
+RUN docker-php-ext-install pdo_mysql
+RUN apk add curl jq py3-configobj py3-pip py3-setuptools python3 python3-dev
+
+#docker build -t daxia/qingting:base .

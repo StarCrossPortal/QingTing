@@ -8,3 +8,4 @@
 */tools/
 xflow/code/data/
 docker-compose.yaml
+edge/fortify/fortify_linux/
