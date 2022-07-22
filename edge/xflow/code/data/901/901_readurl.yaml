@@ -1,0 +1,19 @@
+version: "3.2"
+services:
+  readurl:
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:readurl_202206200906
+    restart: always
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    volumes:
+    - /Users/tangqingsong/mycode/QingTing/edge/readurl/code:/root/code
+    - /tmp/data:/data/tempData
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+    environment:
+    - params=eyJ1cmwiOiJodHRwOlwvXC8xMS4yMi4zMy4xNzg6MTIzNFwvIiwidGFibGVOYW1lIjoiIiwieGZsb3dfbm9kZV9pZCI6IjE4MzMzZTQzLTk3ZGUtNGM4NS1hZjE4LTJlODQyNDliMGQ0OSIsInNvdXJjZV94Zmxvd19ub2RlX2lkIjoiIn0=
+networks:
+  default:
+    external:
+      name: 901_default

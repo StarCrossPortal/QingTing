@@ -1,0 +1,19 @@
+version: "3.2"
+services:
+  murphysec:
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:murphysec_202206221036
+    restart: always
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    volumes:
+    - /Users/tangqingsong/mycode/QingTing/edge/murphysec/code:/root/code
+    - /tmp/data:/data/tempData
+    command: /bin/sh -c "cd  /root/code/  && python3 sleep.py"
+    environment:
+    - params=eyJjb2RlcGF0aCI6ImRhdGEiLCJtZl90b2tlbiI6IlZsYU9UUFZnUVBwZUVJRFo5NGRqYmM1TXdHbElFUVJ5UHdWS2tsYkEiLCJ0YWJsZU5hbWUiOiJwaHBzY3JpcHQiLCJ4Zmxvd19ub2RlX2lkIjoiODkzOTg2NDgtYjE2ZS00OWIxLWFjYmUtODMyYThjMzRhYTExIiwic291cmNlX3hmbG93X25vZGVfaWQiOiJhNjg0MjA1OS1hM2YzLTQyZTktYTE2Yy0wMTQ4MTUzZjYzYmQifQ==
+networks:
+  default:
+    external:
+      name: 901_default

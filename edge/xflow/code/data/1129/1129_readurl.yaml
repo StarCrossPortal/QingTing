@@ -1,0 +1,17 @@
+version: "3.2"
+services:
+  readurl:
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:readurl_202207071132
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    volumes:
+    - /tmp/data:/data/tempData
+    command: /bin/sh -c "cd  /root/code/  &&  php index.php"
+    environment:
+    - params=eyJ1cmwiOiJodHRwczpcL1wvZm9mYS5pbmZvXC9hcGlcL3YxXC9zZWFyY2hcL2FsbD9lbWFpbD03ODc3ODQ0M0BxcS5jb20ma2V5PWY0ZTQzMWZiMzQzODU4M2EyOTk1ODY5ZjdkZjM0MTg0JnFiYXNlNjQ9Y0c5eWREMGlNak0zTlNJZ0ppWWdjSEp2ZEc5amIydzlJbVJ2WTJ0bGNpSWdKaVlnWTI5MWJuUnllVDBpVlZNaSIsInRhYmxlTmFtZSI6IiIsImFiaWxpdHlfbmFtZSI6InJlYWR1cmwiLCJhYmlsaXR5X2lkIjozNywic2VydmVyQWRkciI6Imh0dHA6XC9cL3Fpbmd0aW5nLnN0YXJjcm9zcy5jbiIsInhmbG93X25vZGVfaWQiOiJmYzlkZWU2My1iY2VlLTRkODUtOTE0Ny0xNDM3ZGQ1MTViNzYiLCJ0YXNrX3ZlcnNpb24iOiIyMDIyMDcxODIwMTM1OSIsInNvdXJjZV94Zmxvd19ub2RlX2lkIjoiIiwidG9rZW4iOiI0YjJkNjU3NGUxYWQwZDVlODY0N2YyMzI5NTEzN2I2NiJ9
+networks:
+  default:
+    external:
+      name: 1129_default

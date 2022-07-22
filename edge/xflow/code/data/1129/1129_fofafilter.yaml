@@ -1,0 +1,17 @@
+version: "3.2"
+services:
+  fofafilter:
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:fofafilter_202207150849
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    volumes:
+    - /tmp/data:/data/tempData
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+    environment:
+    - params=eyJ0YWJsZU5hbWUiOiJyZWFkdXJsIiwiYWJpbGl0eV9uYW1lIjoiZm9mYWZpbHRlciIsImFiaWxpdHlfaWQiOjU1LCJzZXJ2ZXJBZGRyIjoiaHR0cDpcL1wvcWluZ3Rpbmcuc3RhcmNyb3NzLmNuIiwieGZsb3dfbm9kZV9pZCI6ImJlYTc2ODljLWU3NTMtNDBiNS04NDY3LTJhNmVhNWNhMTEzMCIsInRhc2tfdmVyc2lvbiI6IjIwMjIwNzE4MjAxMzU5Iiwic291cmNlX3hmbG93X25vZGVfaWQiOiJmYzlkZWU2My1iY2VlLTRkODUtOTE0Ny0xNDM3ZGQ1MTViNzYiLCJ0b2tlbiI6IjRiMmQ2NTc0ZTFhZDBkNWU4NjQ3ZjIzMjk1MTM3YjY2In0=
+networks:
+  default:
+    external:
+      name: 1129_default

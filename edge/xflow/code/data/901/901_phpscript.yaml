@@ -1,0 +1,19 @@
+version: "3.2"
+services:
+  phpscript:
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:phpscript_202206200930
+    restart: always
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    volumes:
+    - /Users/tangqingsong/mycode/QingTing/edge/phpscript/code:/root/code
+    - /tmp/data:/data/tempData
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+    environment:
+    - params=eyJzY3JpcHQiOiI8P3BocFxuXG4kY21kID0gXCJhcHQgaW5zdGFsbCAteSBnaXRcIjtcbmV4ZWMoJGNtZCk7XG5cbiRkYXRhID0ganNvbl9kZWNvZGUoYmFzZTY0X2RlY29kZSgkYXJndlsxXSksIHRydWUpO1xuXG4kbGlzdCA9IFtdO1xuZm9yZWFjaCAoJGRhdGEgYXMgJGJiKSB7XG5cbiAgICAkdXJsSW5mbyA9IGV4cGxvZGUoXCJcL1wiLCRiYik7XG4gICAgJG5hbWUgPSBzdHJfcmVwbGFjZShcIi5naXRcIixcIlwiLCR1cmxJbmZvW2NvdW50KCR1cmxJbmZvKS0xXSk7XG5cblxuICAgICRjbWQgID0gXCJjZCBcL2RhdGFcL3RlbXBEYXRhICYmIGdpdCBjbG9uZSB7JGJifVwiO1xuICAgIGV4ZWMoJGNtZCk7XG5cbiAgICBcbiAgICAkbGlzdFtdID0gXCJcL2RhdGFcL3RlbXBEYXRhXC97JG5hbWV9XCI7XG59IFxuXG5lY2hvIGpzb25fZW5jb2RlKCRsaXN0KTsiLCJ0YWJsZU5hbWUiOiJyZWFkdXJsIiwieGZsb3dfbm9kZV9pZCI6ImE2ODQyMDU5LWEzZjMtNDJlOS1hMTZjLTAxNDgxNTNmNjNiZCIsInNvdXJjZV94Zmxvd19ub2RlX2lkIjoiMTgzMzNlNDMtOTdkZS00Yzg1LWFmMTgtMmU4NDI0OWIwZDQ5In0=
+networks:
+  default:
+    external:
+      name: 901_default

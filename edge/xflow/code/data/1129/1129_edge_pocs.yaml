@@ -1,0 +1,17 @@
+version: "3.2"
+services:
+  edge_pocs:
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:edge_pocs_202207151116
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    volumes:
+    - /tmp/data:/data/tempData
+    command: /bin/sh -c "cd  /root/code/  && php index.php"
+    environment:
+    - params=eyJwb2NfY29kZSI6Im5hbWU6IHBvYy15YW1sLWRvY2tlci1pbnRlcmZhY2VcclxucnVsZXM6XHJcbiAgLSBtZXRob2Q6IEdFVFxyXG4gICAgcGF0aDogXC92ZXJzaW9uXHJcbiAgICBmb2xsb3dfcmVkaXJlY3RzOiBmYWxzZVxyXG4gICAgZXhwcmVzc2lvbjogPlxyXG4gICAgICByZXNwb25zZS5zdGF0dXM9PTIwMCAmJiByZXNwb25zZS5ib2R5LmJjb250YWlucyhiJ0FwaVZlcnNpb24nKSAmJlxyXG4gICAgICByZXNwb25zZS5ib2R5LmJjb250YWlucyhiJ0tlcm5lbFZlcnNpb24nKSIsInNvdXJjZV9maWVsZCI6ImRhdGEiLCJ0YWJsZU5hbWUiOiJmb2ZhZmlsdGVyIiwiYWJpbGl0eV9uYW1lIjoiZWRnZV9wb2NzIiwiYWJpbGl0eV9pZCI6NTgsInNlcnZlckFkZHIiOiJodHRwOlwvXC9xaW5ndGluZy5zdGFyY3Jvc3MuY24iLCJ4Zmxvd19ub2RlX2lkIjoiYTkzNDNlODgtYjhkNy00YmI4LWIyNDctNzc1MmU2ZDhjZWEzIiwidGFza192ZXJzaW9uIjoiMjAyMjA3MTgyMDEzNTkiLCJzb3VyY2VfeGZsb3dfbm9kZV9pZCI6ImJlYTc2ODljLWU3NTMtNDBiNS04NDY3LTJhNmVhNWNhMTEzMCIsInRva2VuIjoiNGIyZDY1NzRlMWFkMGQ1ZTg2NDdmMjMyOTUxMzdiNjYifQ==
+networks:
+  default:
+    external:
+      name: 1129_default
