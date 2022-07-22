@@ -1,0 +1,7 @@
+{
+  "name": "knock",
+  "token": "4b2d6574e1ad0d5e8647f23295137b66",
+  "cmd": "python3 knockpy.py '{$url}' ",
+  "input_type": "domain",
+  "docker_image":"registry.cn-beijing.aliyuncs.com/daxia/qingting:knock_latest"
+}

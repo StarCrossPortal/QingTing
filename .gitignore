@@ -1,0 +1,9 @@
+.idea
+.DS_Store
+/code/vendor/
+/*/*/*/vendor/
+/*/*/vendor/
+/*/vendor/
+/*/*/tools/
+*/tools/
+xflow/code/data/

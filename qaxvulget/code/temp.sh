@@ -1,0 +1,21 @@
+curl 'https://nox.qianxin.com/api/web/portal/vuln_repo/list' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6' \
+  -H 'Connection: keep-alive' \
+  -H 'Content-Type: application/json; charset=UTF-8' \
+  -H 'Cookie: Hm_lvt_9ecbd54536eb318ba9fbdfb7dfee53da=1656312097; Hm_lpvt_9ecbd54536eb318ba9fbdfb7dfee53da=1656498091' \
+  -H 'Origin: https://nox.qianxin.com' \
+  -H 'Referer: https://nox.qianxin.com/vulnerability' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-origin' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.53 Safari/537.36 Edg/103.0.1264.37' \
+  -H 'access-token: da0d61ba189195d349d51214fff9008d' \
+  -H 'dark: true' \
+  -H 'key: :LXHGJYE72DNSR62KADVCIXVKGFWN5QEQ' \
+  -H 'mid: mid2' \
+  -H 'sec-ch-ua: " Not;A Brand";v="99", "Microsoft Edge";v="103", "Chromium";v="103"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "macOS"' \
+  --data-raw '{"page_no":1,"page_size":10,"tag":"","vuln_keyword":""}' \
+  --compressed
