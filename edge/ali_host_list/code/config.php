@@ -1,5 +1,6 @@
 <?php
 
+$info = getParams();
 return [
     // 默认使用的数据库连接配置
     'default' => 'mysql',
@@ -19,7 +20,7 @@ return [
             // 数据库类型
             'type' => 'mysql',
             // 主机地址
-            'hostname' => 'mysql_addr',
+            'hostname' => "{$info['xflow_id']}_mysql_addr",
             'hostport' => 3306,
             // 用户名
             'username' => 'root',

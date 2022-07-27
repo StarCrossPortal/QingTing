@@ -46,14 +46,6 @@ function init()
 function main()
 {
     //遍历获取当前装备信息
-//    $info = [
-//        'while' => 1,
-//        'user_id' => 16,
-//        'xflow_id' => 619,
-//        'token' => '1ca4725c34758183af3fd1f723f07a31',
-//        'serverAddr' => 'http://txy8g.songboy.site:10000',
-//    ];
-
     $info = getParams();
 
     $url = "{$info['serverAddr']}/xflow/getUsceConfig.html?usce_id={$info['xflow_id']}&token={$info['token']}&start_node={$info['startNode']}&stop_node={$info['stopNode']}&task_version={$info['task_version']}";

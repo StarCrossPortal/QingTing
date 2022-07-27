@@ -76,7 +76,7 @@ function getParams()
 {
     $params = getenv('params');
     if (empty($params)) {
-        addlog("readurl 没有获取到环境变量");
+        addlog("xflow 没有获取到环境变量");
         return false;
     }
     return json_decode(base64_decode($params), true);

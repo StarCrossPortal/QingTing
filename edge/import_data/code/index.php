@@ -21,10 +21,8 @@ function main()
     addlog("import_data 开始工作");
     $params = getParams();
     echo json_encode($params, JSON_UNESCAPED_UNICODE) . PHP_EOL;
-    $url = $params['url'];
     $contentStr = $params['import_content'];
     $data = [
-        'url' => $url,
         'xflow_node_id' => $params['xflow_node_id'],
         'raw_data' => $contentStr,
     ];
