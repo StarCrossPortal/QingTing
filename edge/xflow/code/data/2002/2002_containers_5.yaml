@@ -1,0 +1,22 @@
+version: "3.2"
+services:
+  containers_f95c5349:
+    container_name: 2002_containers_f95c5349
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:containers_202211240847
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    environment:
+    - xflow_node_id=f95c5349-dc4b-45ff-8b2a-c33c7a8e3bfb
+    - note=sqlmap
+    volumes:
+    - /root/mycode/qingting/edge/edge/containers/code:/root/code
+    - /data/code:/data/code
+    - /data/share:/data/share
+    - /data/caches:/data/caches
+    - /var/run/docker.sock:/var/run/docker.sock
+    command: /bin/sh -c "cd  /root/code/  && python3 main.py"
+networks:
+  default:
+    name: 2002_default

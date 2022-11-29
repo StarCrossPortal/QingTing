@@ -1,11 +1,13 @@
 <?php
 
 
-exec('cd /root/code  &&  php control.php init  >> /tmp/safe.txt & ');
+
 // 定义grep关键词,和需要执行的命令
 $keyList = [
     'control.php uploadData' => 'cd /root/code  &&  php control.php uploadData  >> /tmp/uploadData.txt & ',
-    'control.php heartbeat' => 'cd /root/code  &&  php control.php heartbeat  >> /tmp/heartbeat.txt & ',
+//    'control.php Db_test_connect' => 'cd /root/code  &&  php control.php Db_test_connect  >> /tmp/Db_test_connect.txt & ',
+    'control.php Clog' => 'cd /root/code  &&  php control.php Clog  >> /tmp/Clog.txt & ',
+    'control.php readResult' => 'cd /root/code  &&  php control.php readResult  >> /tmp/readResult.txt & ',
 ];
 
 // 死循环不断监听任务是不是挂了

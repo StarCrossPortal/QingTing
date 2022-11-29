@@ -5,72 +5,8 @@ require 'vendor/autoload.php';
 
 //上传数据
 use think\facade\Db;
-
-function heartbeat($serverAddr, $nodeId, $token, $taskId)
-{
-//    $ipInfo = json_decode( file_get_contents("http://ipinfo.io/"), true);
-//    $version = file_get_contents("/data/code/version.txt");
-    $version = "v0.0.0";
-    $version = empty($version) ? 'v0.0.0' : $version;
-
-    while (true) {
-        $url = "{$serverAddr}/user_api/heartbeat.html?node_id={$nodeId}&token={$token}&task_id={$taskId}&version={$version}";
-        $result = getServerData($url);
-        $msg = $result ? '成功' : "失败  URL: $url";
-        addlog("心跳连接到服务器 {$msg}");
-        sleep(30);
-    }
-}
-
-function uploadData($serverAddr, $usceId, $token)
-{
-    addlog("开始将节点数据上传到服务器");
-
-    $header = ['Content-Type' => 'application/json;charset=UTF-8'];
-    $url = "{$serverAddr}/user_api/upload_data_batch.html";
-    $tables = getServerData("{$serverAddr}/user_api/get_upload_table_name.html?usce_id={$usceId}");
-    while (true) {
-        if (time() % 10 == 0) {
-            $tables = getServerData("{$serverAddr}/user_api/get_upload_table_name.html?usce_id={$usceId}");
-        }
-        foreach ($tables as $tableName) {
-            $lastId = Db::table('upload_log')->where(['ability_name' => $tableName])->value('upload_last_id');
-            //如果还没有记录,先插入一条记录
-            if ($lastId === null) {
-                Db::table('upload_log')->strict(false)->insert(['ability_name' => $tableName, 'upload_last_id' => 0]);
-                $lastId = 0;
-            }
-            $result = Db::table($tableName)->where('id', '>', $lastId)->limit(50)->select()->toArray();
-            if (empty($result)) {
-                continue;
-            }
-            //避免log反复,上传log表数据的时候不做记录。
-            ($tableName != 'log') && addlog("开始上传 {$tableName} 表数据");
-            $tempId = 0;
-            $data = ['table' => $tableName, 'token' => $token, 'data' => []];
-            foreach ($result as $item) {
-                $tempId = $item['id'];
-                unset($item['id']);
-                $item['usce_id'] = $usceId;
-                $data['data'][] = $item;
-            }
-
-            $data['data'] = base64_encode(json_encode($data['data']));
-            $rawRet = Requests::post($url, $header, json_encode($data));
-            $response = json_decode($rawRet->body, true);
-
-            if ($response['data']) {
-                addlog(["上传 {$tableName} 表数据" . count($result) . "条,成功 {$response['data']} 条", $rawRet->body]);
-            }
-
-
-            //更新状态
-            Db::table('upload_log')->where(['ability_name' => $tableName])->update(['upload_last_id' => $tempId]);
-
-        }
-        sleep(1);
-    }
-}
+use \PhpMqtt\Client\MqttClient;
+use \PhpMqtt\Client\ConnectionSettings;
 
 
 //控制容器执行状态
@@ -90,6 +26,7 @@ function controlStatus(int $concurrent)
                 Db::table('control')->where($where)->update($data);
             }
         }
+
         sleep(5);
     }
 }
@@ -106,20 +43,6 @@ function initData($serverAddr, $usceId, $token)
     file_put_contents("/tmp/init_lock.txt", 1);
 }
 
-function syncScanTarget($serverAddr, $token)
-{
-    //插入功能控制数据
-    addlog("插入扫描记录数据");
-    //获取当前用户有哪些目标
-    $url = "{$serverAddr}/user_api/get_scan_log.html?token={$token}";
-    $list = getServerData($url);
-
-    foreach ($list as $value) {
-        unset($value['id']);
-        Db::table('scan_log')->extra("IGNORE")->insertAll($value);
-    }
-
-}
 
 function createTables($serverAddr, $usceId)
 {
@@ -134,6 +57,10 @@ function createTables($serverAddr, $usceId)
         }
         foreach ($tables as $tableName => $sql) {
             addlog("开始创建表 {$tableName}");
+//            //删除之前的表
+//            $deleteSql = "DROP TABLE IF EXISTS `{$tableName}`";
+//            Db::execute($deleteSql);
+            //创建新表
             $sql = str_replace("CREATE TABLE", "CREATE TABLE If NOT EXISTS ", $sql);
             Db::execute($sql);
         }
@@ -142,60 +69,6 @@ function createTables($serverAddr, $usceId)
     }
 }
 
-function addAbilityControl($serverAddr, $usceId)
-{
-    //插入功能控制数据
-    addlog("插入初始化数据");
-    $lock = true;
-    while ($lock) {
-        $url = "{$serverAddr}/user_api/get_ability.html?usce_id={$usceId}";
-        $data = getServerData($url);
-
-        if (empty($data)) {
-            addlog(["初始化请求场景功能列表失败,休息后继续执行", $url]);
-            sleep(5);
-            continue;
-        }
-
-        foreach ($data as $val) {
-            if (in_array($val, ['urls', 'bugs', 'scan_log', 'target'])) {
-                continue;
-            }
-
-            // 往数据库插入表数据状态
-            $data = ['ability_name' => $val, 'status' => '0'];
-            Db::table('control')->strict(false)->extra("IGNORE")->insert($data);
-        }
-        $lock = false;
-    }
-
-}
-
-function insertTarget($serverAddr, $token, $usceId)
-{
-    $lastId = 0;
-    while (true) {
-        //获取当前用户有哪些目标
-        $url = "{$serverAddr}/user_api/get_target.html?token={$token}&usce_id={$usceId}&lastId={$lastId}";
-        $list = getServerData($url);
-        $list = is_array($list) ? $list : [];
-        foreach ($list as $val) {
-
-            $info = Db::table('target')->where($val)->find();
-            if (empty($info)) {
-                //插入目标
-                addlog("添加新目标 {$val['name']}  {$val['url']}");
-                $result = Db::table('target')->strict(false)->extra("IGNORE")->insertGetId($val);
-                $lastId = empty($result) ? $lastId : $val['id'];
-            }
-        }
-
-        //获取场景所拥有的的功能
-        addAbilityControl($serverAddr, $usceId);
-        sleep(20);
-    }
-
-}
 
 function downAction($serverAddr, $token, $taskId)
 {
@@ -227,7 +100,7 @@ function downAction($serverAddr, $token, $taskId)
 
             //上报执行事件完成状态
             $url = "{$serverAddr}/user_api/down_action_ok.html?token={$token}&usceId={$taskId}&lastId={$val['id']}";
-            getServerData($url);
+            uploadDataMqtt($url);
         }
         sleep(60);
     }
@@ -255,5 +128,223 @@ function createControl()
   UNIQUE KEY `un_name` (`ability_name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;";
     $result = Db::execute($sql);
+
+}
+
+
+function getMqtt($xflow_id)
+{
+    $server = '49.232.77.154';
+    $port = 1883;
+    $clientId = "edge_{$xflow_id}_" . rand(1000, 9999);
+    $clean_session = false;
+
+    $connectionSettings = new ConnectionSettings();
+    $connectionSettings
+//    ->setUsername($username)
+//    ->setPassword($password)
+        ->setKeepAliveInterval(300)
+        ->setLastWillTopic('emqx/test/last-will')
+        ->setLastWillMessage('client disconnect')
+        ->setLastWillQualityOfService(1);
+
+
+    $mqtt = new MqttClient($server, $port, $clientId);
+    $mqtt->connect($connectionSettings, $clean_session);
+    printf("client connected\n");
+    return $mqtt;
+}
+
+
+function received($usceId, $token)
+{
+    $mqtt = getMqtt($usceId);
+    $mqtt->subscribe("edge_received_{$usceId}", function ($topic, $message) {
+        var_dump('接收到一条数据:', json_decode($message, true));
+
+    }, 0);
+
+    $mqtt->loop(true);
+}
+
+
+function uploadMqttData($usceId, $token)
+{
+//      $mqtt = getMqtt($usceId);
+//
+//      //获取表列表
+//      $tables = ['httpsend', 'script', 'read_database', 'filter', 'contain_log', 'readfile', 'import_text','mqtt_message'];
+//      while (true) {
+//          foreach ($tables as $tableName) {
+//              $lastId = Db::table('upload_log')->where(['ability_name' => $tableName])->value('upload_last_id');
+//              //如果还没有记录,先插入一条记录
+//              if ($lastId === null) {
+//                  Db::table('upload_log')->strict(false)->insert(['ability_name' => $tableName, 'upload_last_id' => 0]);
+//                  $lastId = 0;
+//              }
+//              $result = Db::table($tableName)->where('id', '>', $lastId)->limit(10)->select()->toArray();
+//              print_r("{$tableName}__{$lastId}__" . count($result) . PHP_EOL);
+//              if (empty($result)) {
+//                  continue;
+//              }
+//              //避免log反复,上传log表数据的时候不做记录。
+//              ($tableName != 'log') && addlog("开始上传 {$tableName} 表数据");
+//              $tempId = 0;
+//              $data = ['table' => $tableName, 'token' => $token, 'data' => []];
+//              foreach ($result as $item) {
+//                  $tempId = $item['id'];
+//                  unset($item['id']);
+//                  $item['usce_id'] = $usceId;
+//                  $data['data'][] = $item;
+//              }
+//
+//              $mqtt->publish('edge_upload_data', json_encode($data), 2, true);
+//
+//              //更新状态
+//              Db::table('upload_log')->where(['ability_name' => $tableName])->update(['upload_last_id' => $tempId]);
+//          }
+//          if (rand(0, 9) == 1) sleep(1);
+//      }
+//
+//      $mqtt->loop(true);
+}
+
+function init()
+{
+
+    //数据库配置信息,无需改动
+    $config = require('./config.php');
+    Db::setConfig($config);
+    $i = true;
+    while ($i) {
+        try {
+            $isTable = Db::query('SHOW TABLES');
+        } catch (\Exception $e) {
+            // 这是进行异常捕获
+            echo "MySQL服务未启动:" . $e->getMessage() . PHP_EOL;
+            sleep(1);
+            continue;
+        }
+
+        $i = false;
+    }
+
+
+}
+
+
+function Db_test_connect($usceId)
+{
+    $path = 'db_test_connect.py';
+    $cmd = "cd /root/code && python3 {$path} {$usceId}";
+    $output = exec($cmd, $output);
+}
+
+
+function uploadDataMqtt(string $url)
+{
+    $params = getParams();
+    $urlInfo = parse_url($url);
+    parse_str($urlInfo['query'], $urlData);
+
+    $data = ['topic' => $urlInfo['path'], 'data' => json_encode($urlData, JSON_UNESCAPED_UNICODE), 'usce_id' => $params['xflow_id']];
+    Db::table('mqtt_message')->insert($data);
+
+    return true;
+}
+
+function readResult()
+{
+
+    while (true) {
+        insertOutput();
+        usleep(200);
+    }
+}
+
+/**
+ * 将结果插入到磁盘,并修改节点运行状态
+ * @return false|mixed
+ */
+function insertOutput()
+{
+
+    //获取要读取的列表
+    $params = getParams();
+    $where = ['xflow_id' => $params['xflow_id'], 'task_version' => $params['task_version']];
+    $nodeList = Db::table('node_exec_status')->where($where)->select()->toArray();
+    foreach ($nodeList as $node) {
+        $nodeId = $node['node_id'];
+        $outputFile = "/data/share/xflow_output_{$nodeId}.json";
+        //判断文件是否已经存在
+        if (!file_exists($outputFile)) {
+            echo "文件不存在 {$outputFile}".PHP_EOL;
+            continue;
+        }
+        //防止磁盘还未写入完整
+        $tempContent = file_get_contents($outputFile);
+        if ($tempContent && $tempContent[strlen($tempContent) - 1] && $tempContent[strlen($tempContent) - 1] != '}') {
+            print_r("文件内容异常 $outputFile" . PHP_EOL);
+            continue;
+        }
+        //格式验证
+        $outputInfo = json_decode($tempContent, true);
+        if (isset($outputInfo['data']) == false) {
+            print_r("文件内容异常 $outputFile" . PHP_EOL);
+            var_dump(file_get_contents($outputFile));
+            continue;
+        }
+
+        //打印输出的内容
+        print_r($outputInfo);
+        foreach ($outputInfo['data'] as $key => $value) {
+            if (empty($value)) {
+                print_r("输出的内容内容为空");
+                continue;
+            }
+            $value = is_array($value) ? $value : ['raw' => $value];
+            $data = [
+                'raw_data' => json_encode($value, JSON_UNESCAPED_UNICODE),
+                'xflow_node_id' => $outputInfo['params']['xflow_node_id'],
+                'node_name' => $outputInfo['params']['node_name'],
+                'task_version' => $outputInfo['params']['task_version'],
+                'usce_id' => $outputInfo['params']['xflow_id']
+            ];
+            Db::table('edge_data')->insert($data);
+        }
+
+        //修改控制表状态,并通知服务器已经处理完事
+        if (isset($outputInfo['params']) && is_array($outputInfo['params'])) {
+            changeNodeExecStatus(2, $outputInfo['params']);
+        }
+
+        //备份历史,用于分析
+        $historyPaht = "/data/share/history/" . date('Y-m-d');
+        @mkdir($historyPaht, 0777, true);
+        rename($outputFile, "$historyPaht/xflow_output_{$node['ability_name']}_{$nodeId}_{$params['task_version']}.json");
+    }
+
+}
+
+/**
+ * 修改节点执行状态
+ * @param $status
+ * @param $ability
+ */
+function changeNodeExecStatus($status, array $nodeParams)
+{
+    //修改执行状态
+    $where = ['node_id' => $nodeParams['xflow_node_id'], 'task_version' => $nodeParams['task_version']];
+    try {
+        Db::table('node_exec_status')->where($where)->update(['exec_status' => $status]);
+    } catch (\think\db\exception\DbException $e) {
+        var_dump("修改状态出错:", $e);
+    }
+
+    $info = getParams();
+    $ability = $nodeParams;
+    $url = "{$info['serverAddr']}/xflow/update_node_exec_status.html?usce_id={$info['xflow_id']}&token={$info['token']}&xflow_node_id={$ability['xflow_node_id']}&status={$status}&ability_name={$ability['ability_name']}&ability_id={$ability['ability_id']}&task_version={$ability['task_version']}";
+    uploadDataMqtt($url);
+
 
 }

@@ -1,0 +1,21 @@
+version: "3.2"
+services:
+  containers_4a047550:
+    container_name: 2002_containers_4a047550
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:containers_202211240847
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    environment:
+    - xflow_node_id=4a047550-c8ff-447c-a3d3-6cd7fa47dd54
+    - note=RAD爬取网站URL
+    volumes:
+    - /data/code:/data/code
+    - /data/share:/data/share
+    - /data/caches:/data/caches
+    - /var/run/docker.sock:/var/run/docker.sock
+    command: /bin/sh -c "cd  /root/code/  && python3 main.py"
+networks:
+  default:
+    name: 2002_default

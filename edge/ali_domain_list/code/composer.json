@@ -1,6 +1,0 @@
-{
-    "require": {
-        "topthink/think-orm":"^2.0",
-        "alibabacloud/domain-20180129": "1.0.2"
-    }
-}

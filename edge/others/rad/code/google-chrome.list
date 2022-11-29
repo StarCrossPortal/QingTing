@@ -1,0 +1,1 @@
+deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main

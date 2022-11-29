@@ -1,0 +1,12 @@
+certifi==2021.10.8
+charset-normalizer==2.0.12
+docopt==0.6.2
+idna==3.3
+pipreqs==0.4.11
+requests==2.27.1
+six
+urllib3==1.26.9
+yarg==0.1.9
+pyodps
+pandas
+pyyaml

@@ -1,8 +1,0 @@
----
-mysql:
-  host: mysql_addr
-  port: 3306
-  username: root
-  password: '123'
-  database: edge
-...

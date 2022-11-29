@@ -21,6 +21,8 @@ return [
             'type' => 'mysql',
             // 主机地址
             'hostname' => "{$info['xflow_id']}_mysql_addr",
+//            'hostname' => "10.1.1.140",
+//            'hostport' => 32002,
             'hostport' => 3306,
             // 用户名
             'username' => 'root',

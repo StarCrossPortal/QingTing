@@ -1,0 +1,21 @@
+version: "3.2"
+services:
+  containers_76e11884:
+    container_name: 2002_containers_76e11884
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:containers_202211240847
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    environment:
+    - xflow_node_id=76e11884-4e54-4504-ba2b-f75dfa62ff30
+    - note=DIRMAP
+    volumes:
+    - /data/code:/data/code
+    - /data/share:/data/share
+    - /data/caches:/data/caches
+    - /var/run/docker.sock:/var/run/docker.sock
+    command: /bin/sh -c "cd  /root/code/  && python3 main.py"
+networks:
+  default:
+    name: 2002_default

@@ -1,0 +1,6 @@
+{
+    "require": {
+        "topthink/think-orm":"^2.0",
+        "tencentcloud/cvm": "^3.0"
+    }
+}

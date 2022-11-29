@@ -1,9 +1,6 @@
-FROM registry.cn-beijing.aliyuncs.com/daxia/qingting:xflow_base
+FROM registry.cn-beijing.aliyuncs.com/daxia/qingting:xflow_202210311809
 
 COPY ./code /root/code
-COPY ./tools /data/tools
-RUN chmod 777 -R /data/tools
-
 WORKDIR /root/code/
 
 CMD ["php","/root/code/index.php"]

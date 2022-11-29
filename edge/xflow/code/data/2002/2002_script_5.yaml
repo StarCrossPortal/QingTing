@@ -1,0 +1,22 @@
+version: "3.2"
+services:
+  script_fd75f474:
+    container_name: 2002_script_fd75f474
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:script_202211232051
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    environment:
+    - xflow_node_id=fd75f474-05f9-46c2-8cd2-ceb7d0f6f318
+    - note=URL中提取域名
+    volumes:
+    - /root/mycode/qingting/edge/edge/script/code:/root/code
+    - /data/code:/data/code
+    - /data/share:/data/share
+    - /data/caches:/data/caches
+    - /var/run/docker.sock:/var/run/docker.sock
+    command: /bin/sh -c "cd  /root/code/  && python3 main.py"
+networks:
+  default:
+    name: 2002_default

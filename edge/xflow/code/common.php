@@ -90,3 +90,4 @@ function getServerData(string $url)
     $data = $data['data'] ?? [];
     return $data;
 }
+

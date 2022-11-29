@@ -1,0 +1,21 @@
+version: "3.2"
+services:
+  containers_bde97f83:
+    container_name: 2002_containers_bde97f83
+    image: registry.cn-beijing.aliyuncs.com/daxia/qingting:containers_202211240847
+    stdin_open: true
+    tty: true
+    networks:
+    - default
+    environment:
+    - xflow_node_id=bde97f83-3db1-4fbd-a5ba-7f832992380a
+    - note=XRAY扫描器
+    volumes:
+    - /data/code:/data/code
+    - /data/share:/data/share
+    - /data/caches:/data/caches
+    - /var/run/docker.sock:/var/run/docker.sock
+    command: /bin/sh -c "cd  /root/code/  && python3 main.py"
+networks:
+  default:
+    name: 2002_default

@@ -1,186 +1,179 @@
 <?php
 include "./vendor/autoload.php";
 include "./common.php";
+include "./model.php";
 
 use think\facade\Db;
 
 //初始化操作
 init();
+
+//初始化数据
+//遍历获取当前装备信息
+$info = getParams();
+initData($info['serverAddr'], $info['xflow_id'], $info['token']);
+
+//扩展程序
+$cmd = "php ./safe.php >> /tmp/safe.txt &";
+exec($cmd);
+
+//删除之前的数据
+Db::table('edge_data')->where('id', '>', 0)->delete();
+
 //主程序
-main();
+exec_node();
 
-function init()
-{
-    //扩展程序
-    $cmd = "php ./safe.php >> /tmp/safe.txt &";
-    exec($cmd);
+sleep(6);
 
-
-    //数据库配置信息,无需改动
-    $config = require('./config.php');
-    Db::setConfig($config);
-
-
-    sleep(3);
-    $i = true;
-    while ($i) {
-        try {
-            $isTable = Db::query('SHOW TABLES LIKE "control"');
-        } catch (\Exception $e) {
-            // 这是进行异常捕获
-            echo "MySQL服务未启动:" . $e->getMessage() . PHP_EOL;
-            sleep(1);
-            continue;
-        }
-
-        if ($isTable) {
-            $i = false;
-        }
-        echo "初始化暂未完成..." . PHP_EOL;
-        sleep(1);
-    }
-
-
-}
-
-function main()
+function getTaskList()
 {
     //遍历获取当前装备信息
     $info = getParams();
+    $paramStr = http_build_query([
+        'usce_id' => $info['xflow_id'],
+        'token' => $info['token'],
+        'start_node' => $info['startNode'],
+        'stop_node' => $info['stopNode'],
+        'task_version' => $info['task_version'],
+        'select_node' => $info['selectNode'],
+    ]);
+    $url = "{$info['serverAddr']}/xflow/getUsceConfigV2.html?{$paramStr}";
 
-    $url = "{$info['serverAddr']}/xflow/getUsceConfig.html?usce_id={$info['xflow_id']}&token={$info['token']}&start_node={$info['startNode']}&stop_node={$info['stopNode']}&task_version={$info['task_version']}";
     $taskList = getServerData($url);
 
+    //获取任务
+    foreach ($taskList as $nodeId => $item) {
+        $params = $item['params'];
+        $data = [
+            'node_id' => $nodeId,
+            'source_node_id' => json_encode($params['source_xflow_node_id']),
+            'task_version' => $params['task_version'],
+            'exec_status' => 0,
+            'label' => $item['name'],
+            'xflow_id' => $params['xflow_id'],
+            'ability_name' => $params['ability_name'],
+        ];
 
-    //判断流程图执行周期,如果
-    $i = 10;
-    do {
-        $i++;
-        execTask($info, $taskList);
-        $sleepTime = empty($info['exec_cycle']) ? 1000000000 : $info['exec_cycle'];
-        sleep($sleepTime);
-    } while (true);//表达式为循环条件
-
-}
-
-function execTask(array $info, array $taskListFull)
-{
-    foreach ($taskListFull as $taskList) {
-        //遍历执行容器
-        foreach ($taskList as $item) {
-            $dirPath = "./data/{$info['xflow_id']}";
-            $composeFile = "{$dirPath}/{$info['xflow_id']}_{$item['name']}.yaml";
-
-            //下载文件
-            downComposeFile($composeFile, $item, $info);
-            //创建表结构
-            crreateTable($item['name'], $info, $item['params']);
-            //停止上一轮执行
-            $cmd = "docker-compose -f {$composeFile} down";
-            exec($cmd);
-            echo $cmd . PHP_EOL;
-
-            //运行容器,修改状态,轮训等待执行完毕
-            runContainer($item, $composeFile, $info);
-        }
+        Db::table('node_exec_status')->replace()->insert($data);
     }
-    //修改流程图执行状态
 
-    //添加日志
-    addlog("执行完毕");
+    return $taskList;
 }
 
-
-//运行容器
-function runContainer($ability, string $fileName, array $info)
+function exec_node()
 {
+    $info = getParams();
+    $xflow_id = $info['xflow_id'];
+    $version = $info['task_version'];
+    //向服务器请求任务列表
+    $taskList = getTaskList();
 
-    $data = ['ability_id' => $ability['params']['ability_id'], 'ability_name' => $ability['name'], 'status' => 1, 'task_version' => $info['task_version'], 'xflow_node_id' => $ability['params']['xflow_node_id']];
-    Db::table('control')->replace()->insert($data);
+    //开始执行任务
+    $i = true;
+    while ($i) {
+        $list = Db::table('node_exec_status')->where(['xflow_id' => $xflow_id])->select()->toArray();
+        $list = array_column($list, null, 'node_id');
+        $listCount = count($list);
+        $key = 0;
+        foreach ($taskList as $nodeId => $value) {
+            $key++;
+            $preItem = $list[$nodeId];
+            $item = $list[$nodeId];
+            //如果已经执行,则不再执行
+            if ($item['exec_status']) {
+//                print_r("节点{$value['name']}已经执行 {$item['exec_status']},跳过 {$item['node_id']}\n");
+                continue;
+            }
 
+            //如果有上游节点,并且也没有执行，则跳过
+            if (!empty($item['source_node_id'])) {
+                $sourceNodeArr = json_decode($item['source_node_id'], true);
+                if (!is_array($sourceNodeArr)) {
+                    print_r(["{$value['note']} 上游数据格式不正确", $item['source_node_id']]);
+                    continue;
+                }
+                foreach ($sourceNodeArr as $preNodeId) {
+                    if (is_string($preNodeId) && $list[$preNodeId]['exec_status'] != 2) {
+//                        print_r("节点{$value['name']}的上游 {$preNodeId} 没执行完成,跳过 {$item['node_id']}\n");
+                        continue 2;
+                    }
+                }
+            }
 
-    //启动容器
-    $cmd = "docker-compose -f {$fileName} up -d";
-    exec($cmd);
-    echo $cmd . PHP_EOL;
+            //如果没有上游，执行
+            execOneTask($value, $info, $key);
+            print_r("----------------------------------------------------------\n");
 
-    changeNodeExecStatus($info, 0, $ability);
-    change_CurrentNodeStatus($info, $ability);
-    //轮训判断执行是否完成
-    while (true) {
-        $where = ['xflow_node_id' => $ability['params']['xflow_node_id'], 'task_version' => $info['task_version']];
-//        $where = ['ability_name' => $ability['name'], 'task_version' => $info['task_version']];
-        $isExec = Db::table('control')->where($where)->value('status');
-
-        if (empty($isExec)) {
-            changeNodeExecStatus($info, 1, $ability);
-            change_CurrentNodeStatus($info, $ability);
-            break;
+            //每执行一次数量减1,如果都跳过了,就说明执行完成了
+            $listCount--;
         }
-        //每隔一秒查询状态
+
+        //判断是否都跳过了
+        $where = ['xflow_id' => $xflow_id, 'exec_status' => 0, 'task_version' => $version];
+        $i = Db::table('node_exec_status')->where($where)->count();
+        print_r($i);
         sleep(1);
     }
 }
 
-function changeNodeExecStatus($info, $status, $ability)
+
+function execOneTask($nodeInfo, $envParam, $key)
 {
+    $dirPath = "./data/{$envParam['xflow_id']}";
+    $composeFile = "{$dirPath}/{$envParam['xflow_id']}_{$nodeInfo['name']}_{$key}.yaml";
+    //下载compose文件,并将参数写入到xflow_input.json文件里
+    downComposeFile($composeFile, $nodeInfo, $envParam);
+    //启动容器
+    $cmd = "docker-compose -f {$composeFile} up -d ";
+    @exec($cmd);
+    echo $cmd . PHP_EOL;
 
-    $url = "{$info['serverAddr']}/xflow/update_node_exec_status.html?usce_id={$info['xflow_id']}&token={$info['token']}&xflow_node_id={$ability['params']['xflow_node_id']}&status={$status}&ability_name={$ability['params']['ability_name']}&ability_id={$ability['params']['ability_id']}&task_version={$ability['params']['task_version']}";
-    $result = getServerData($url);
-    $msg = $status ? "节点执行完成" : "节点开始执行";
-
+    //修改程序的执行状态为1
+    changeNodeExecStatus(1, $nodeInfo['params']);
 }
-
-function change_CurrentNodeStatus($info, $ability)
-{
-
-    $url = "{$info['serverAddr']}/xflow/update_current_node_status.html?token={$info['token']}&xflow_node_id={$ability['params']['xflow_node_id']}&task_version={$ability['params']['task_version']}";
-    $result = getServerData($url);
-
-
-}
-
 
 //下载docker-compose文件
 function downComposeFile(string $fileName, array $ability, array $info)
 {
-
     $abilityName = $ability['name'];
     //如果文件夹不存在,则创建文件
     !file_exists(dirname($fileName)) && mkdir(dirname($fileName), 0777, true);
-
     $token = $info['token'];
-    $url = "{$info['serverAddr']}/xflow/getComposerStr?usce_id={$info['xflow_id']}&ability_name={$abilityName}&token={$token}";
-    var_dump($url);
-    echo $url . PHP_EOL;
-    $composeStr = file_get_contents($url);
-    $composeArr = json_decode($composeStr, true);
-
-    $ability['params']['token'] = $token;
-    $paramsStr = base64_encode(json_encode($ability['params'], JSON_UNESCAPED_UNICODE));
-    $composeArr['services'][$abilityName]['environment'][] = "params={$paramsStr}";
-
-
-    $composeStr = trim(str_replace("...", "", str_replace("---", "", yaml_emit($composeArr))));
-
+    $url = "{$info['serverAddr']}/xflow/getComposerStr?usce_id={$info['xflow_id']}&ability_name={$abilityName}&xflow_node_id={$ability['params']['xflow_node_id']}&token={$token}";
+//    echo $url . PHP_EOL;
+    $composeArr = json_decode(file_get_contents($url), true);
+    $composeStr = trim(str_replace("...", "", str_replace("---", "", yaml_emit($composeArr, YAML_UTF8_ENCODING))));
     file_put_contents($fileName, $composeStr);
-}
+    $ability['params']['token'] = $token;
+    //把参数作为json写入到磁盘挂载
+    $where = ['task_version' => $ability['params']['task_version']];
+    $lists = Db::table('edge_data')->where($where)->whereIn('xflow_node_id', $ability['params']['source_xflow_node_id'])->column('raw_data');
 
-function crreateTable(string $abilityName, array $info)
-{
-    //获取插件建表语句
-    $token = $info['token'];
-    $sql = getServerData("{$info['serverAddr']}/user_api/get_ability_sql.html?ability_name={$abilityName}&token={$token}");
-
-    if (empty($sql)) {
-        addlog("初始化请求建表语句失败,休息后继续执行");
-        sleep(5);
-        return false;
+    $sql = Db::table('edge_data')->getLastSql();
+    var_dump(["<{$ability['params']['node_name']}> 的上游节点数据  ：", $sql, $lists]);
+    foreach ($lists as &$value) {
+        $value = json_decode($value, true);
     }
+    $inputData = array_merge($ability['params'], ['lists' => $lists]);
+    backParam($inputData);
 
-    addlog("开始创建表 {$abilityName}");
-    $sql = str_replace("CREATE TABLE", "CREATE TABLE If NOT EXISTS ", $sql);
-    Db::execute($sql);
+
 }
 
+function backParam($inputData)
+{
+    $historyPaht = "/data/share/history/" . date('Y-m-d');
+    @mkdir($historyPaht, 0777, true);
 
+//     //备份历史input信息，便于调试分析
+     $timeStr = date('H_i_s');
+//     $inPath = "/data/share/input.json";
+//     $outPath = "/data/share/output.json";
+//     if (file_exists($inPath)) rename($inPath, "$historyPaht/input_{$timeStr}.json");
+//     if (file_exists($outPath)) rename($outPath, "$historyPaht/output_{$timeStr}.json");
+
+    $inPath = "/data/share/xflow_input_{$inputData['xflow_node_id']}.json";
+    if (file_exists($inPath)) rename($inPath, "$historyPaht/xflow_input_{$timeStr}.json");
+
+    file_put_contents($inPath, json_encode($inputData, JSON_UNESCAPED_UNICODE));
+}
