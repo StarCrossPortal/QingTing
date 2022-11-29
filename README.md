@@ -27,6 +27,9 @@
 
 
 ## 部分功能截图
+
+![](http://oss.songboy.site/blog/954d7f55d04499f49458d6b69aa3ff6.png)
+
 ![](http://oss.songboy.site/blog/WX20220429-105707@2x.png)
 
 ![image](https://user-images.githubusercontent.com/8509054/167979483-17b05531-1b92-4063-a8a0-e1feeaf33039.png)
