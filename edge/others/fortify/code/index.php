@@ -1,28 +1,28 @@
 <?php
 //获取输入的参数
 $inputPath = "/data/share/input_" . getenv("xflow_node_id") . ".json";
-$outputPath = "/data/share/output_" . getenv("xflow_node_id") . ".json";if (!file_exists($inputPath)) {
+$outputPath = "/data/share/output_" . getenv("xflow_node_id") . ".json";
+if (!file_exists($inputPath)) {
     print_r("未找到必要的参数文件:{$inputPath}");
 }
-$list = json_decode(file_get_contents($inputPath), true);
+$value = json_decode(file_get_contents($inputPath), true);
 
+exec("apt install -y php-xml");
 
 //开始执行代码
 $data = [];
-foreach ($list as $key => $value) {
-    $codePath = $value['code_path'];
+$codePath = $value['code_path'];
 
 
-    //执行检测脚本
-    $outpath = "/tmp/" . md5($codePath);
-    $result = execTool($codePath, $outpath);
-    if ($result !== true) continue;
+//执行检测脚本
+$outpath = rtrim($codePath, '/') . "/" . md5($codePath);
+$result = execTool($codePath, $outpath);
+if ($result !== true) return false;
 
-    //录入检测结果
-    $tempList = writeData($outpath);
-    //开始执行
-    $data = array_merge($data, $tempList);
-}
+//录入检测结果
+$tempList = writeData($outpath);
+
+$data = array_merge($data, $tempList);
 
 //将结果输出到文件
 file_put_contents($outputPath, json_encode($data, JSON_UNESCAPED_UNICODE));
@@ -51,7 +51,7 @@ function execTool($codePath, $outPath)
         chmod($outPath, 0777);
     }
 
-    $fortifyPath = "/data/tools/fortify";
+    $fortifyPath = "/data/share/fortify";
 
     if (!file_exists($fortifyPath)) die("fortify 代码扫描器不存在:{$fortifyPath}");
 
@@ -65,7 +65,7 @@ function execTool($codePath, $outPath)
 //        $cmd .= " -no-default-rules  -rules  {$fortifyPath}/Core/config/rules/core_php.bin";
         system($cmd);
     } else {
-        print_r("fortify扫描文件 {$outPath}.fpr 已存在,不再不再重新扫描");
+        print_r("fortify扫描文件 {$outPath}.fpr 已存在,不再重新扫描");
     }
 
     if (file_exists("{$outPath}.xml") == false) {

@@ -1,7 +1,7 @@
 <?php
 //获取输入的参数
-$inputFile = "/data/share/input_".getenv("xflow_node_id").".json";
-$outputFile = "/data/share/output_".getenv("xflow_node_id").".json";
+$inputFile = "/data/share/input_" . getenv("xflow_node_id") . ".json";
+$outputFile = "/data/share/output_" . getenv("xflow_node_id") . ".json";
 
 //没有input,直接返回
 if (!file_exists($inputFile)) {
@@ -12,18 +12,22 @@ if (!file_exists($inputFile)) {
 $list = json_decode(file_get_contents($inputFile), true);
 print_r($inputFile);
 print_r($list);
+//$list = [
+//    ['url' => "http://10.1.1.140:8989/home/index.php?m=tiezi&a=index&bk=9"]
+//];
 $data = [];
 //处理数据
 foreach ($list as $val) {
+
     $url = $val['url'];
     $toolPath = "/data/tools/sqlmap/";
 
-    print_r("开始扫描URL:{$url}".PHP_EOL);
+    print_r("开始扫描URL:{$url}" . PHP_EOL);
     execTool($url, $toolPath);
 
     //录入检测结果
     $tempList = writeData($toolPath, $url);
-    print_r("扫描URL:{$url}完成".PHP_EOL);
+    print_r("扫描URL:{$url}完成" . PHP_EOL);
     print_r($tempList);
     $data = array_merge($data, $tempList);
 }
@@ -57,18 +61,33 @@ function writeData($toolPath, $url)
 
 function execTool($v, $toolPath)
 {
+    //自动下载工具
+    isDownloadTools($toolPath);
 
     $arr = parse_url($v);
     $blackExt = ['.js', '.css', '.json', '.png', '.jpg', '.jpeg', '.gif', '.mp3', '.mp4'];
     //没有可以注入的参数
     if (!isset($arr['query']) or in_array_strpos($arr['path'], $blackExt) or (strpos($arr['query'], '=') === false)) {
-        print_r(["URL地址不存在可以注入的参数".PHP_EOL, $v]);
+        print_r(["URL地址不存在可以注入的参数" . PHP_EOL, $v]);
         return false;
     }
     $file_path = $toolPath . 'result/';
     $cmd = "cd {$toolPath}  && python3 ./sqlmap.py -u '{$v}' --batch  --random-agent --output-dir={$file_path}";
     exec($cmd);
     return true;
+}
+
+function isDownloadTools($toolPath)
+{
+    if (file_exists($toolPath)) {
+        return true;
+    }
+    $dirName = dirname($toolPath);
+    !file_exists($dirName) && mkdir($dirName, 0777, true);
+
+    $cmd = "cd {$dirName} && git clone --depth=1 https://gitee.com/songboy/sqlmap.git";
+    echo "正在下载工具 sqlmap $cmd " . PHP_EOL;
+    exec($cmd);
 }
 
 function in_array_strpos($word, $array)

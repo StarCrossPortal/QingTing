@@ -1,10 +1,11 @@
 <?php
 
 
-$inputFile = "/data/share/input_".getenv("xflow_node_id").".json";
-$outputFile = "/data/share/output_".getenv("xflow_node_id").".json";
+$inputFile = "/data/share/input_" . getenv("xflow_node_id") . ".json";
+$outputFile = "/data/share/output_" . getenv("xflow_node_id") . ".json";
 $mf_token = getenv('mf_token');
 
+installTool();
 
 //没有input,直接返回
 if (!file_exists($inputFile)) {
@@ -43,4 +44,17 @@ function execTool(string $codepath, string $mf_token)
     print_r($result);
     $result = $result['comps'] ?? [];
     return $result;
+}
+
+function installTool()
+{
+
+    $cmd = "which murphysec";
+    exec($cmd, $result);
+
+    if (empty($result)) {
+        $cmd = "wget -q https://s.murphysec.com/install.sh -O - | /bin/bash";
+        system($cmd);
+        print_r("安装murphysec完成");
+    }
 }

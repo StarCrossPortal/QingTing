@@ -1,7 +1,8 @@
 <?php
 //获取输入的参数
 $inputPath = "/data/share/input_" . getenv("xflow_node_id") . ".json";
-$outputPath = "/data/share/output_" . getenv("xflow_node_id") . ".json";if (!file_exists($inputPath)) {
+$outputPath = "/data/share/output_" . getenv("xflow_node_id") . ".json";
+if (!file_exists($inputPath)) {
     print_r("未找到必要的参数文件:{$inputPath}");
 }
 
@@ -10,126 +11,60 @@ $list = json_decode(file_get_contents($inputPath), true);
 $data = [];
 foreach ($list as $key => $value) {
     //接收必要参数
-    $accessKeyId = $value['accessKeyId'];
-    $accessKeySecret = $value['accessKeySecret'];
+    $url = $value['url'];
 
     //开始执行
-    $data[] = execTool($accessKeyId, $accessKeySecret);
+    $data = array_merge($data, execTool($url));
 }
 
 
 //将结果输出到文件
 file_put_contents($outputPath, json_encode($data, JSON_UNESCAPED_UNICODE));
 
-function main()
+
+function execTool($url)
 {
+    $awvs_url = "<<awvs_address>>";
+    $awvs_token = "<<awvs_token>>";
 
-    $awvs_url = getenv('awvs_url');
-    $awvs_token = getenv('awvs_token');
+    $awvs_url = rtrim($awvs_url, '/');
 
-    if (empty($awvs_url) || empty($awvs_token)) {
-        $errMsg = ["执行AWVS扫描任务失败,未找到有效得配置信息", $awvs_url, $awvs_token];
-        addlog($errMsg);
-        return false;
-    }
-    // 循环读取状态值,直到执行完成
-    while (true) {
-        //程序是否执行存放与状态控制表中,如果可以执行才执行,否则休眠。
-        $result = Db::table('control')->where(['ability_name' => 'awvs', 'status' => 1])->find();
-        //如果还不能开始,则休眠15秒后继续
-        if (empty($result)) {
-            sleep(15);
-            continue;
-        }
-        addlog("awvs 开始工作");
-
-        //读取目标数据,排除已经扫描过的目标
-        $targetArr = Db::table('target')->where('id', 'NOT IN', function ($query) {
-            $query->table('scan_log')->where(['tool_name' => 'awvs', 'target_name' => 'target'])->field('data_id');
-        })->where(['scan_status'=>1])->limit(20)->select()->toArray();
-
-        $targetArr = Db::table('target')->limit(20)->select()->toArray();
-        foreach ($targetArr as $value) {
-            //定义变量
-            list($url, $id, $user_id, $tid) = [$value['url'], $value['id'], $value['user_id'], $value['id'],];
-
-            //获取AWVS中的ID,如果还没有则创建目标
-            $targetId = getTargetId($id, $url, $awvs_url, $awvs_token);
-            if (!$targetId) {
-                continue;
-            }
-            //获取扫描状态
-            $retArr = getScanStatus($targetId, $awvs_url, $awvs_token);
-            if ($retArr && is_array($retArr)) {
-                addVulnList($retArr['last_scan_id'], $retArr['last_scan_session_id'], $awvs_url, $awvs_token, $tid);
-            }
-        }
-        //更新最后扫描的ID
-        updateScanLog('awvs', 'target', $value['id'] ?? 0);
-
-        // 修改插件的执行状态
-        Db::table('control')->where(['ability_name' => 'awvs'])->update(['status' => 0, 'end_time' => date('Y-m-d H:i:s')]);
-
-        addlog("awvs执行完毕");
-        sleep(20);
-    }
-
-}
-
-
-function addVulnList($scanId, $scanSessionId, $awvs_url, $awvs_token, $tid)
-{
-    $vulnList = getVulnList($scanId, $scanSessionId, $awvs_url, $awvs_token);
-    foreach ($vulnList['vulnerabilities'] as $value) {
-        if (empty($value['tags'])) {
-            continue;
-        }
-        $detail = getDetail($scanId, $scanSessionId, $value['vuln_id'], $awvs_url, $awvs_token);
-        $value = array_merge($value, $detail);
-        foreach ($value as $k => $v) {
-            $value[$k] = is_string($v) ? $v : json_encode($v, JSON_UNESCAPED_UNICODE);
-        }
-
-        $value['tid'] = $tid;
-        $value['hash'] = md5(json_encode($value));
-        $id = Db::table('awvs')->extra('IGNORE')->insertGetId($value);
-        if ($id) {
-            $value['tool_name'] = 'awvs';
-            $value['detail'] = $value['vt_name'];
-            $value['vul_type'] = $value['vt_name'];
-            $value['data_id'] = $id;
-            Db::table('bugs')->extra('IGNORE')->insert($value);
-        }
-    }
-}
-
-function getTargetId($id, $url, $awvs_url, $awvs_token)
-{
-    //判断URL是否有效
-    if (filter_var($url, FILTER_VALIDATE_URL) === false) {
-        addlog(["URL地址不正确", $id, $url]);
-        return false;
-    }
-
-    //判断目标是否已经创建
-    $appInfo = Db::table('awvs_task_list')->where(['tid' => $id])->find();
-    if (!empty($appInfo)) {
-        return $appInfo['target_id'];
-    }
-
-    //新增一个目标
+    //1. 添加目标
     $appInfo = addTarget($url, $awvs_url, $awvs_token);
-    if (!isset($appInfo['target_id'])) {
-        $errMsg = ["任务发送到AWVS失败,请在容器内检查是否能访问到AWVS服务地址{$awvs_url}，以及token有效性~", $id, $url];
-        addlog($errMsg, true);
-        return false;
-    }
-    $appInfo['tid'] = $id;
-    Db::table('awvs_task_list')->extra('IGNORE')->insert($appInfo);
 
-    //通过目标ID创建扫描任务
-    startScan($appInfo['target_id'], $awvs_url, $awvs_token);
+    $targetId = $appInfo['target_id'];
+
+    $scanInfo = startScan($targetId, $awvs_url, $awvs_token);
+    $scanId = $scanInfo['scan_id'];
+
+    //2. 等待执行结果
+    $scanStatus = false;
+
+    while ($scanStatus === false) {
+        $scanStatus = getScanStatus($targetId, $awvs_url, $awvs_token);
+        sleep(3);
+    }
+
+    $scanSessionId = $scanStatus['last_scan_session_id'];
+    //3. 返回结果
+    $vulList = getVulnList($scanId, $scanSessionId, $awvs_url, $awvs_token);
+
+    //获取漏洞详情
+    $result = [];
+    foreach ($vulList['vulnerabilities'] as $item) {
+        $result[] = getDetail($scanId, $scanSessionId, $item['vuln_id'], $awvs_url, $awvs_token);
+    }
+
+    return $result;
 }
+
+function addlog($msg)
+{
+
+    print_r($msg);
+    print_r(PHP_EOL);
+}
+
 
 function addTarget($url, $awvs_url, $awvs_token)
 {
@@ -181,7 +116,6 @@ function getScanStatus($targetId, $awvs_url, $awvs_token)
 
     if (isset($retArr['code']) && $retArr['code'] == 404) {
         addlog(["未在AWVS中找到此目标ID", $targetId]);
-        Db::table('awvs_task_list')->where(['target_id' => $targetId])->delete();
         return false;
     }
     //API未授权
@@ -192,7 +126,7 @@ function getScanStatus($targetId, $awvs_url, $awvs_token)
     }
 
     //判断目标扫描状态
-    if (!isset($retArr['last_scan_session_status']) or $retArr['last_scan_session_status'] != 'completed') {
+    if (!isset($retArr['last_scan_session_status']) or !in_array($retArr['last_scan_session_status'], ['aborted', 'completed', 'failed'])) {
         addlog("目标[{$targetId}]还未扫描完成,请耐心等待...");
         return false;
     }
@@ -230,7 +164,9 @@ function getDetail($scanId, $scanSessionId, $vulnId, $awvs_url, $awvs_token)
 {
     $ch = curl_init();
 
-    curl_setopt($ch, CURLOPT_URL, $awvs_url . "/api/v1/scans/{$scanId}/results/{$scanSessionId}/vulnerabilities/{$vulnId}");
+    $url = $awvs_url . "/api/v1/scans/{$scanId}/results/{$scanSessionId}/vulnerabilities/{$vulnId}";
+
+    curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -274,4 +210,5 @@ function startScan($targetId, $awvs_url, $awvs_token)
     curl_close($ch);
 
 
+    return json_decode($result, true);
 }

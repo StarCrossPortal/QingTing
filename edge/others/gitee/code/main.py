@@ -38,7 +38,7 @@ while page <= num:
             j += 1
     time.sleep(3)
 
-print("执行 gitee 完毕")
-out_put_path = '/data/share/output.json'
+print(result_lst)
+out_put_path = "/data/share/output_{}.json".format(os.environ["xflow_node_id"])
 with open(out_put_path, 'w') as f1:
     json.dump(result_lst, f1)

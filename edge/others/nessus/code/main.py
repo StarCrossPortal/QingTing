@@ -181,8 +181,8 @@ def main():
     nessus_url=os.getenv('url')
     username=os.getenv('user')
     password=os.getenv('pwd')
-    input_path='/data/share/input.json'
-    output_path='/data/share/output.json'
+    input_path="/data/share/input_{}.json".format(os.environ["xflow_node_id"])
+    output_path="/data/share/output_{}.json".format(os.environ["xflow_node_id"])
     token=get_token(nessus_url,username,password)
     if token:
     # 构造请求头参数

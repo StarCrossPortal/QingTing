@@ -46,8 +46,8 @@ def del_results(lst):
 
 
 if __name__=="__main__":
-    input_path='/data/share/input.json'
-    output_path='/data/share/output.json'
+    input_path="/data/share/input_{}.json".format(os.environ["xflow_node_id"])
+    output_path="/data/share/output_{}.json".format(os.environ["xflow_node_id"])
     apikey = os.getenv('zoomeye_apikey')
     Domain_lst=[]
     with open(input_path,'r') as f:

@@ -6,30 +6,33 @@ if (!file_exists($inputPath)) {
     print_r("未找到必要的参数文件:{$inputPath}");
 }
 $list = json_decode(file_get_contents($inputPath), true);
+//安装工具
+$toolPath = "/data/share/hema/";
+installTool($toolPath);
 
 //开始执行代码
 $data = [];
 foreach ($list as $key => $value) {
-    $codePath = $value['codePath'];
-    $toolPath = "/data/tools/hema";
+    $codePath = $value['code_path'];
     //执行检测脚本
-    execTool($codePath);
+    execTool($toolPath,$codePath);
 
     //录入检测结果
     $tempList = writeData($codePath, $toolPath);
 
     //开始执行
-    $data=array_merge($data, $tempList);
+    $data = array_merge($data, $tempList);
 }
 
 //将结果输出到文件
 file_put_contents($outputPath, json_encode($data, JSON_UNESCAPED_UNICODE));
 
 
-function execTool(string $codePath)
+function execTool(string $toolPath,string $codePath)
 {
 
-    $cmd = "cd /data/tools/hema && ./hm scan {$codePath}";
+    $cmd = "cd {$toolPath} && ./hm scan {$codePath}";
+    echo $cmd.PHP_EOL;
     exec($cmd);
     return true;
 
@@ -40,7 +43,7 @@ function writeData($codePath, string $toolPath)
 
     $outPath = "{$toolPath}/result.csv";
     if (!file_exists($outPath)) {
-        print_r("没有找到结果文件:{$outPath}");
+        print_r("没有找到结果文件:{$outPath}\n");
         return [];
     }
     $result = readCsv($codePath, $outPath);
@@ -77,4 +80,15 @@ function readCsv($codeBasePath, $uploadfile = '')
     return $data;
 }
 
+function installTool($toolPath)
+{
+    if (!file_exists($toolPath)) {
+        print_r("开始下载河马工具");
+        $cmd = "mkdir -p {$toolPath} && cd {$toolPath} && ";
+        $cmd .= "wget http://qingting.starcross.cn/static/tools/hema/hm-linux-amd64.tgz  && ";
+        $cmd .= "tar -zxvf hm-linux-amd64.tgz";
 
+        exec($cmd);
+    }
+
+}

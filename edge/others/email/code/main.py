@@ -31,8 +31,8 @@ def main():
     recev_email = os.getenv('recev_email') #接收者邮箱
     send_email = os.getenv('send_email')  #发送者邮箱
     password = os.getenv('password')       #发送者邮箱为授权码
-    input_path='/data/share/input.json'
-    output_path='/data/share/output.json'
+    input_path="/data/share/input_{}.json".format(os.environ["xflow_node_id"])
+    output_path="/data/share/output_{}.json".format(os.environ["xflow_node_id"])
 
 
     if send_email.split("@")[1] =='qq.com':

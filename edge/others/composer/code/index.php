@@ -10,7 +10,7 @@ $list = json_decode(file_get_contents($inputPath), true);
 $data = [];
 foreach ($list as $key => $value) {
     //接收必要参数
-    $codePath = $value['codePath'];
+    $codePath = $value['code_path'];
 
     //开始执行
     $data = array_merge($data, writeData($codePath));

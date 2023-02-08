@@ -11,14 +11,24 @@ $data = json_decode(file_get_contents($inputFile), true);
 
 //自定义中间处理事件
 $result = [];
-$cmd = "{$rustscan} {$data['host']} -t 500 -b 65535 -- -A";
+$cmd = "{$rustscan} {$data['raw']} -t 500 -b 65535 -- -A";
 exec($cmd, $result);
 
+print_r($result);
+
 //过滤数据
-$result = array_filter($result, function ($item) {
-    return $item[0] == 'O';
-}, ARRAY_FILTER_USE_BOTH);
-$result = array_values($result);
+if($result){
+    $result = array_filter($result, function ($item) {
+        return $item[0] == 'O';
+    }, ARRAY_FILTER_USE_BOTH);
+    $result = array_values($result);
+}
+
+foreach ($result as &$item){
+    $item = str_replace("[35m","",$item);
+    $item = str_replace("[0m","",$item);
+}
+
 
 
 //将执行结果写入到文件中

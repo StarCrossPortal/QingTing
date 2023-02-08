@@ -9,7 +9,7 @@ $list = json_decode(file_get_contents($inputPath), true);
 //开始执行代码
 $data = [];
 foreach ($list as $key => $value) {
-    $codePath = $value['codePath'];
+    $codePath = $value['code_path'];
 
     $result = execTool($codePath);
 

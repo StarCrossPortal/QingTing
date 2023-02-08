@@ -16,8 +16,8 @@ def nikto_scan(output_path,host):
 
 
 def main():
-    input_path='/data/share/input.json'
-    output_path='/data/share/output.json'
+    input_path="/data/share/input_{}.json".format(os.environ["xflow_node_id"])
+    output_path="/data/share/output_{}.json".format(os.environ["xflow_node_id"])
     with open(input_path,'r') as f:
         url_lst=json.load(f)
     for i in url_lst:

@@ -1,16 +1,16 @@
 <?php
 //获取输入的参数
-$inputFile = "/data/share/input_".getenv("xflow_node_id").".json";
-$outputFile = "/data/share/output_".getenv("xflow_node_id").".json";
+$inputFile = "/data/share/input_" . getenv("xflow_node_id") . ".json";
+$outputFile = "/data/share/output_" . getenv("xflow_node_id") . ".json";
 
 //没有input,直接返回
 if (!file_exists($inputFile)) {
-    var_dump($outputFile, json_encode(['code' => 0, 'msg' => "{$inputFile}文件不存在", 'data' => []], JSON_UNESCAPED_UNICODE));
-    return 0;
+    file_put_contents($inputFile, json_encode([]));
 }
 //读取上游数据
 $list = json_decode(file_get_contents($inputFile), true);
 
+//$list = [['url' =>"http://10.1.1.140:8989/home/index.php"]];
 print_r($list);
 //将工具执行
 $data = [];
@@ -31,7 +31,7 @@ file_put_contents($outputFile, json_encode($data, JSON_UNESCAPED_UNICODE));
 function execTool($url)
 {
 
-    $hash = md5($url);
+    $hash = md5($url.rand());
     $resultPath = "/tmp/{$hash}/tool.json";
     //清理之上一轮的结果
     if (file_exists($resultPath)) unlink($resultPath);
@@ -42,7 +42,8 @@ function execTool($url)
 
     $result = [];
 
-    $toolPath = "/data/tools/xray";
+    $toolPath = "/data/share/tools/xray";
+    autoDownTool($toolPath);
     if (!file_exists($toolPath)) die("xray 工具目录不存在:{$toolPath}");
 
     $path = "cd $toolPath && ";
@@ -55,4 +56,18 @@ function execTool($url)
     $toolResult = json_decode($toolResult, true);
     print_r($toolResult);
     return $toolResult;
+}
+
+function autoDownTool($toolPath)
+{
+    if (file_exists($toolPath)) {
+        return true;
+    }
+    $dirName = dirname($toolPath);
+    !file_exists($dirName) && mkdir($dirName, 0777, true);
+
+    $cmd = "cd {$dirName} && git clone --depth=1 https://gitee.com/songboy/xray.git  && chmod -R 777 xray";
+    echo "正在下载工具 $cmd " . PHP_EOL;
+    exec($cmd);
+
 }
