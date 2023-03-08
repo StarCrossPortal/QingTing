@@ -1,3 +1,7 @@
+edge/xflow/code/data
+edge/others/*/code/vendor
+edge/others/*/tools/
+edge/others/fortify/fortify_linux
 .idea
 .DS_Store
 /code/vendor/
@@ -9,3 +13,12 @@
 xflow/code/data/
 docker-compose.yaml
 edge/fortify/fortify_linux/
+edge/others/*.json
+edge/others/configs
+edge/script/code/__pycache__/
+edge/configs
+/mnt/e/backup/edge/edge/xflow/code/thread_name_lst.json
+test/*
+edge/*/code/*/__pycache__/
+edge/script/code/temp.py
+edge/others/awvs/.scannerwork/

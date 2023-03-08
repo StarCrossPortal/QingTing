@@ -1,0 +1,35 @@
+[
+  {
+    "raw": "start infoscan"
+  },
+  {
+    "raw": "(icmp) Target 192.168.3.1     is alive"
+  },
+  {
+    "raw": "[*] Icmp alive hosts len is: 1"
+  },
+  {
+    "raw": "192.168.3.1:80 open"
+  },
+  {
+    "raw": "192.168.3.1:443 open"
+  },
+  {
+    "raw": "[*] alive ports len is: 2"
+  },
+  {
+    "raw": "start vulscan"
+  },
+  {
+    "raw": "[*] WebTitle: http:\/\/192.168.3.1        code:200 len:5053   title:Success"
+  },
+  {
+    "raw": "[*] WebTitle: https:\/\/192.168.3.1       code:200 len:5053   title:Success"
+  },
+  {
+    "raw": "已完成 2\/2"
+  },
+  {
+    "raw": "[*] 扫描结束,耗时: 5.7694439s"
+  }
+]
